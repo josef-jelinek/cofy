@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cofy Lisp Interpreter in JavaScript</title>
+  <style>
+    html, body { margin: 0; padding: 0; }
+    body { font: 12px Arial, sans-serif; background: #AAA; color: #000; padding: 20px; }
+    #input { width: 100%; height: 350px; font: 12px monospace; }
+    #output { background: #EEE; padding: 10px; margin: 10px 0 0; font: 12px monospace; }
+    small { color: #48F; }
+    i { color: #C00; }
+  </style>
+  <script src="../lang/core.js"></script>
+  <script>
+    // basic compatibility with older browsers
+    if (!Array.prototype.map) {
+      Array.prototype.map = function(fun) {
+        var res = new Array(this.length);
+        for (var i = 0; i < this.length; i++)
+          res[i] = fun(this[i]);
+        return res;
+      };
+    }
+
+    var out = function() {
+      var html_encode = function(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+      var is_nil = function(x) { return x === null || x === undefined; };
+      var is_array = function(x) { return typeof x === 'object' && x.join && x.map; };
+      var array_to_string = function(x) { return '(' + x.map(to_string).join(' ') + ')'; };
+      var to_string = function(x) { return is_nil(x) ? 'nil' : is_array(x) ? array_to_string(x) : '' + x; };
+      var to_html = function(x) { return html_encode(to_string(x)); }
+      var attempt = 1;
+      return {
+        print: function(x) { document.getElementById('output').innerHTML +=  '<small>' + attempt++ + '</small> ' + to_html(x) + '<br>'; },
+        error: function(e) { document.getElementById('output').innerHTML +=  '<i>' + e.name + ": " + e.message  + '</i><br>'; }
+      };
+    }();
+
+    function read_eval_print(s) {
+      try {
+        out.print(COFY.eval(COFY.read(s)));
+      } catch (e) {
+        out.error(e);
+      }
+    }
+  </script>
+</head>
+<body>
+  <div><textarea id="input">(def inc (fn (n) (+ n 1)))
+(def map (fn (f x)
+             (if (empty? x) '()
+                            (cons (f (first x)) (map f (rest x))))))
+
+(map inc '(1 2 3))</textarea></div>
+  <input type="button" value="Evaluate" onclick="read_eval_print(document.getElementById('input').value)">
+  <div id="output"><b>Output Window</b><br></div>
+</body>
+</html>
+
