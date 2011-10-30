@@ -11,19 +11,10 @@
     small { color: #48F; }
     i { color: #C00; }
   </style>
+  <script src="../tools/js.js"></script>
   <script src="../lang/core.js"></script>
   <script>
-    // basic compatibility with older browsers
-    if (!Array.prototype.map) {
-      Array.prototype.map = function(fun) {
-        var res = new Array(this.length);
-        for (var i = 0; i < this.length; i++)
-          res[i] = fun(this[i]);
-        return res;
-      };
-    }
-
-    var out = function() {
+    var OUT = function() {
       var html_encode = function(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
       var is_nil = function(x) { return x === null || x === undefined; };
       var is_array = function(x) { return typeof x === 'object' && x.join && x.map; };
@@ -39,9 +30,9 @@
 
     function read_eval_print(s) {
       try {
-        out.print(COFY.eval(COFY.read(s)));
+        OUT.print(COFY.eval(COFY.read(s)));
       } catch (e) {
-        out.error(e);
+        OUT.error(e);
       }
     }
   </script>

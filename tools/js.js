@@ -10,6 +10,15 @@ var trim = String.trim || function (s) {
   return s.replace(/^\s+|\s+$/g, '');
 };
 
+if (!Array.prototype.map) {
+  Array.prototype.map = function (f) {
+    var res = Array(this.length);
+    for (var i = 0; i < this.length; i++)
+      res[i] = f(this[i]);
+    return res;
+  };
+}
+
 // Y combinator
 function y(g) {
   'use strict';
