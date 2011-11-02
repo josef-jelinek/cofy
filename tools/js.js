@@ -12,6 +12,7 @@ var trim = String.trim || function (s) {
 
 if (!Array.prototype.map) {
   Array.prototype.map = function (f) {
+    'use strict';
     var res = Array(this.length);
     for (var i = 0; i < this.length; i++)
       res[i] = f(this[i]);
@@ -19,14 +20,3 @@ if (!Array.prototype.map) {
   };
 }
 
-// Y combinator
-function y(g) {
-  'use strict';
-  return (function (f) {
-    return f(f);
-  }(function (f) {
-    return g(function (x) {
-      return f(f)(x);
-    });
-  }));
-}

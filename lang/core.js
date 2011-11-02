@@ -1,17 +1,18 @@
 var COFY = (function (mu) {
   'use strict';
-
-  var read_all = function (tokens) {
+  function read_all(tokens) {
     var x = [];
     while (tokens.length > 0)
       x.push(read(tokens));
     return x;
-  };
+  }
 
-  var read = function (tokens) {
+  function read(tokens) {
     if (tokens.length === 0)
       throw { name: 'SyntaxError', message: 'unexpected end of input' };
     var token = tokens.shift();
+    if ('"' === token)
+      throw { name: 'SyntaxError', message: 'unclosed string' };
     if ("'" === token)
       return ['quote', read(tokens)];
     if ('(' === token) {
@@ -24,14 +25,13 @@ var COFY = (function (mu) {
     if (')' === token)
       throw { name: 'SyntaxError', message: 'unexpected ")"' };
     return isNaN(token) ? token : +token;
-  };
+  }
 
-  var tokenize = function (s) {
-    s = s.replace(/'/g, " ' ").replace(/\(/g, ' ( ').replace(/\)/g, ' ) ');
-    return s.replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '').split(' ');
-  };
+  function tokenize(s) {
+    return s.match(/'|\(|\)|[^\s'()"]+|"([^\\]|\\.)*?"|"/g);
+  }
 
-  var compile = function (x) {
+  function compile(x) {
     if (typeof x === 'string')
       return function(env) { return env.find(x.valueOf()); };
     if (typeof x === 'number')
@@ -65,23 +65,23 @@ var COFY = (function (mu) {
     return function (env) {
       return f(env).apply(env, x.map(function(f) { return f(env); }));
     };
-  };
+  }
 
-  var do_seq = function (x, res) {
+  function do_seq(x, res) {
     return function(env) {
       for (var i = 0; i < x.length; i++)
         res = x[i](env);
       return res;
     };
-  };
+  }
 
-  var to_map = function (bindings, names, values) {
+  function to_map(bindings, names, values) {
     for (var i = 0; i < names.length; i++)
       bindings[names[i]] = values[i];
     return bindings;
-  };
+  }
 
-  var make_env = function (bindings, scope) {
+  function make_env(bindings, scope) {
     var has = function(s) { return bindings.hasOwnProperty(s); };
     return {
       find: function(s) { return has(s) ? bindings[s] : scope.find(s); },
@@ -90,13 +90,13 @@ var COFY = (function (mu) {
         return has(s) ? bindings[s] = x : scope.set(s, x);
       }
     }
-  };
+  }
 
-  var global_env = function () {
-    var is_nil = function(x) { return x === null || x === mu; };
-    var is_array = function(x) {
+  var global_env = (function () {
+    function is_nil(x) { return x === null || x === mu; }
+    function is_array(x) {
       return x && typeof x === 'object' && x.constructor === Array;
-    };
+    }
     var bindings = {
       '+': function(a, b) { return a + b; },
       '-': function(a, b) { return a - b; },
@@ -126,7 +126,7 @@ var COFY = (function (mu) {
     for (var i = 0; i < math_names.length; i++)
       bindings[math_names[i]] = Math[math_names[i]];
     return make_env(bindings);
-  }();
+  }());
 
   return {
     read: function(s) { return read_all(tokenize(s)); },
