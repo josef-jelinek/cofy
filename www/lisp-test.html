@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cofy Lisp Interpreter in JavaScript Test</title>
+  <style>
+    html, body { margin: 0; padding: 0; }
+    body { font: 12px Arial, sans-serif; background: #FFF; color: #000; padding: 20px; }
+    #result { padding: 3px 10px; }
+    #log { padding: 10px; font-family: monospace; }
+  </style>
+  <script>
+    var tests = {
+      testPass: function() { this.isTrue(true); },
+      testFail: function() {
+        try {
+          this.isTrue(null);
+          this.fail('Expected exception');
+        } catch (e) {}
+      }
+    };
+  </script>
+</head>
+<body onload="run()">
+  <div id="result"></div>
+  <div id="log"></div>
+  <script src="../tools/js.js"></script>
+  <script src="../tools/test.js"></script>
+  <script src="../lang/core.js"></script>
+  <script>
+    function run() {
+      var result = document.getElementById('result');
+      var log = document.getElementById('log');
+      TEST.init(result, log)(tests);
+    }
+  </script>
+</body>
+</html>
+

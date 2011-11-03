@@ -1,4 +1,4 @@
-var TEST = (function (mu) {
+var TEST = (function (nil) {
   'use strict';
   function fail(message) {
     throw { name: 'TestFail', message: message };
@@ -24,7 +24,7 @@ var TEST = (function (mu) {
       return o === null || fail(message || 'not null');
     },
     isUndefined: function (o, message) {
-      return o === mu || fail(message || 'not undefined');
+      return o === nil || fail(message || 'not undefined');
     },
     isSame: function (o1, o2, message) {
       return o1 === o2 || fail(message || 'not the same');
