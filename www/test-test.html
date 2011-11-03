@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cofy Lisp Interpreter in JavaScript Test</title>
+  <title>JavaScript Minimalistic Test Framework Test</title>
   <style>
     html, body { margin: 0; padding: 0; }
     body { font: 12px Arial, sans-serif; background: #FFF; color: #000; padding: 20px; }
@@ -12,11 +12,37 @@
   <script>
     var tests = {
       testPass: function() { this.isTrue(true); },
-      testFail: function() {
-        try {
-          this.isTrue(null);
-          this.fail('Expected exception');
-        } catch (e) {}
+      testTruthy: function() {
+        this.isTruthy(true);
+        this.isTruthy(1);
+        this.isTruthy(-1);
+        this.isTruthy(1/0);
+        this.isTruthy(-1/0);
+        this.isTruthy(' ');
+        this.isTruthy([]);
+        this.isTruthy({});
+      },
+      testFalsy: function(nil) {
+        this.isFalsy(false);
+        this.isFalsy(null);
+        this.isFalsy(nil);
+        this.isFalsy(0);
+        this.isFalsy('');
+        this.isFalsy(0/0);
+      },
+      testSame: function(nil) {
+        this.isSame(true, true);
+        this.isSame(false, false);
+        this.isSame(0, 0);
+        this.isSame('a', 'a');
+        this.isSame(null, null);
+        this.isSame(nil);
+        this.isSame(1/0, 1/0);
+        this.isSame(-1/0, -1/0);
+        this.isNotSame(1/0, -1/0);
+        this.isNotSame(0/0, 0/0);
+        this.isNotSame([], []);
+        this.isNotSame({}, {});
       }
     };
   </script>
@@ -24,9 +50,7 @@
 <body onload="run()">
   <div id="result"></div>
   <div id="log"></div>
-  <script src="../tools/js.js"></script>
   <script src="../tools/test.js"></script>
-  <script src="../lang/core.js"></script>
   <script>
     function run() {
       var result = document.getElementById('result');

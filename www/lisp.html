@@ -11,6 +11,16 @@
     small { color: #48F; }
     i { color: #C00; }
   </style>
+</head>
+<body>
+  <div><textarea id="input">(def inc (fn (n) (+ n 1)))
+(def map (fn (f x)
+             (if (empty? x) '()
+                            (cons (f (first x)) (map f (rest x))))))
+
+(map inc '(1 2 3))</textarea></div>
+  <input type="button" value="Evaluate" onclick="read_eval_print(document.getElementById('input').value)">
+  <div id="output"><b>Output Window</b><br></div>
   <script src="../tools/js.js"></script>
   <script src="../lang/core.js"></script>
   <script>
@@ -36,16 +46,6 @@
       }
     }
   </script>
-</head>
-<body>
-  <div><textarea id="input">(def inc (fn (n) (+ n 1)))
-(def map (fn (f x)
-             (if (empty? x) '()
-                            (cons (f (first x)) (map f (rest x))))))
-
-(map inc '(1 2 3))</textarea></div>
-  <input type="button" value="Evaluate" onclick="read_eval_print(document.getElementById('input').value)">
-  <div id="output"><b>Output Window</b><br></div>
 </body>
 </html>
 
