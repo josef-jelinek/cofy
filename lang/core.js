@@ -3,7 +3,17 @@ var COFY = (function (nil) {
   'use strict';
 
   function read_all(tokens) {
-    var i = 0;
+    var tokenHandlers, i, x;
+
+    function error(message) {
+      throw { name: 'SyntaxError', message: message };
+    }
+
+    function read_token() {
+      if (i >= tokens.length)
+        error('Expected more');
+      return tokens[i++];
+    }
 
     function read_seq() {
       var x = [];
@@ -13,29 +23,27 @@ var COFY = (function (nil) {
     }
 
     function read() {
-      var token, x = [];
-      if (i >= tokens.length)
-        throw { name: 'SyntaxError', message: 'Expected more' };
-      token = tokens[i++];
-      if ('"' === token)
-        throw { name: 'SyntaxError', message: 'Unclosed string' };
-      if ("'" === token)
-        return ['quote', read()];
-      if ('(' === token) {
-        x = read_seq();
-        if (i >= tokens.length)
-          throw { name: 'SyntaxError', message: 'Expected more' };
-        i++;
-        return x;
-      }
-      if (')' === token)
-        throw { name: 'SyntaxError', message: 'Unexpected ")"' };
+      var token = read_token();
+      if (contains(tokenHandlers, token))
+        return tokenHandlers[token]();
       return isNaN(token) ? token : +token;
     }
 
+    tokenHandlers = {
+      '"': function () { error('Unclosed string'); },
+      ')': function () { error('Unexpected ")"'); },
+      "'": function () { return ['quote', read()]; },
+      '(': function () {
+        var x = read_seq();
+        if (read_token() !== ')')
+          error('Expected ")"');
+        return x;
+      }
+    };
+    i = 0;
     x = read_seq();
     if (i < tokens.length)
-      throw { name: 'SyntaxError', message: 'Trailing characters' };
+      error('Trailing characters');
     return x;
   }
 
@@ -43,33 +51,36 @@ var COFY = (function (nil) {
     return s.match(/'|\(|\)|[^\s'()"]+|"([^\\]|\\.)*?"|"/g);
   }
 
+  function eval(x, env) {
+    return typeof x === 'function' ? x(env) : x;
+  }
+
   function compile(x) {
     if (typeof x === 'string')
       return function (env) { return env[x]; };
     if (typeof x === 'number')
-      return function (env) { return x; };
+      return x;
     if (x[0] === 'quote')
-      return function (x) {
-        return function(env) { return x; };
-      }(x[1]);
+      return function (x) { return x; }(x[1]);
     if (x[0] === 'if')
       return function (x1, x2, x3) {
-        return function (env) { return x1(env) ? x2(env) : x3(env); };
+        return function (env) {
+          return eval(x1, env) ? eval(x2, env) : eval(x3, env);
+        };
       }(compile(x[1]), compile(x[2]), compile(x[3]));
     if (x[0] === 'def')
       return function (x1, x2) {
         return function (env) {
           if (contains(env, x1))
             throw { name: 'RuntimeError', message: 'Redefining ' + x1 };
-          env[x1] = x2(env);
+          env[x1] = eval(x2, env);
         };
       }(x[1], compile(x[2]));
     if (x[0] === 'fn')
       return function (x1, x2) {
         return function (env) {
-          return function () {
-            return x2(make_env(to_map({}, x1, arguments), env));
-          };
+          var new_env = make_env(to_map({}, x1, arguments), env);
+          return function () { return eval(x2, new_env); };
         };
       }(x[1], do_seq(x.slice(2).map(compile)));
     if (x[0] === 'do')
@@ -77,14 +88,14 @@ var COFY = (function (nil) {
     x = x.map(compile);
     var f = x.shift();
     return function (env) {
-      return f(env).apply(env, x.map(function(f) { return f(env); }));
+      return eval(f, env).apply(env, x.map(function(f) { return eval(f, env); }));
     };
   }
 
   function do_seq(x, res) {
     return function(env) {
       for (var i = 0; i < x.length; i++)
-        res = x[i](env);
+        res = eval(x[i], env);
       return res;
     };
   }
@@ -151,6 +162,6 @@ var COFY = (function (nil) {
 
   return {
     read: function(s) { return read_all(tokenize(s)); },
-    eval: function(x) { return do_seq(x.map(compile))(global_env); }
+    eval: function(x) { return eval(do_seq(x.map(compile)), global_env); }
   };
 }());
