@@ -100,17 +100,9 @@
         },
         definitions: function () {
           this.isUndefined(COFY.read_eval('(def a 1)'));
-          var succeeded = false;
-          try {
-            COFY.read_eval('(def a 2)');
-            succeeded = true;
-          } catch (e) {}
-          this.isFalse(succeeded);
-          try {
-            COFY.read_eval('((fn (a) (def a 2) a) a)');
-            succeeded = true;
-          } catch (e) {}
-          this.isFalse(succeeded);
+          this.throwsError(function () { COFY.read_eval('(def a 2)'); });
+          this.throwsError(function () { COFY.read_eval('((fn (a) (def a 2) a) a)'); });
+          this.throwsError(function () { COFY.read_eval('((fn () (def a 2 a 3) a))'); });
           this.isSame(COFY.read_eval('((fn (a) a) a)'), 1);
           this.isSame(COFY.read_eval('((fn () (def a 2) a))'), 2);
           this.isSame(COFY.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
@@ -118,12 +110,7 @@
           this.isSame(COFY.read_eval('a'), 1);
         },
         special_forms: function () {
-          var succeeded = false;
-          try {
-            COFY.read_eval('(def if 1) if');
-            succeeded = true;
-          } catch (e) {}
-          this.isFalse(succeeded);
+          this.throwsError(function () { COFY.read_eval('(def if 1) if'); });
           this.isSame(COFY.read_eval('((fn () (def if 1) if))'), 1);
         },
         interop: function () {
