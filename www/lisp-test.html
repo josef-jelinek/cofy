@@ -103,6 +103,7 @@
           this.throwsError(function () { COFY.read_eval('(def a 2)'); });
           this.throwsError(function () { COFY.read_eval('((fn (a) (def a 2) a) a)'); });
           this.throwsError(function () { COFY.read_eval('((fn () (def a 2 a 3) a))'); });
+          this.isSame(COFY.clean_read_eval('(def a 2) a'), 2);
           this.isSame(COFY.read_eval('((fn (a) a) a)'), 1);
           this.isSame(COFY.read_eval('((fn () (def a 2) a))'), 2);
           this.isSame(COFY.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
@@ -128,6 +129,25 @@
           this.isSame(f1(function (a, b) { return a + b; }), 3);
           var f2 = COFY.read_eval('(fn (f) (fn (a b) (f a b)))');
           this.isSame(f2(function (a, b) { return a + b; })(1, 2), 3);
+        }
+      },
+      print: {
+        constants: function () {
+          this.isSame(COFY.read_eval_print('0'), '0');
+          this.isSame(COFY.read_eval_print('"hello"'), '"hello"');
+          this.isSame(COFY.read_eval_print('"hel\r\\n\\"\\\\lo"'), '"hel\\r\\n\\"\\\\lo"');
+          this.isSame(COFY.read_eval_print("'hello"), 'hello');
+          this.isSame(COFY.read_eval_print('()'), '()');
+          this.isSame(COFY.read_eval_print("'()"), '()');
+          this.isSame(COFY.read_eval_print("'(1)"), '(1)');
+          this.isSame(COFY.read_eval_print("'(1 2)"), '(1 2)');
+          this.isSame(COFY.read_eval_print("'((1))"), '((1))');
+          this.isSame(COFY.read_eval_print('true'), 'true');
+          this.isSame(COFY.read_eval_print('false'), 'false');
+          this.isSame(COFY.read_eval_print('nil'), 'undefined');
+          this.isSame(COFY.read_eval_print('(cons 1 2)'), '(1 : 2)');
+          this.isSame(COFY.read_eval_print('(cons 0 (cons 1 2))'), '(0 1 : 2)');
+          this.isSame(COFY.read_eval_print('(cons (cons 1 2) 3)'), '((1 : 2) : 3)');
         }
       }
     };

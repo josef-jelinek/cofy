@@ -9,6 +9,7 @@ var COFY = (function (nil) {
     if (!isSymbol(this))
       return new Symbol(s);
     this.name = s;
+    this.toString = function () { return '[object Symbol]'; }
     symbols[s] = this;
   }
 
@@ -17,6 +18,7 @@ var COFY = (function (nil) {
       return new Cons(head, tail);
     this.head = head;
     this.tail = tail;
+    this.toString = function () { return '[object Cons]'; }
   }
 
   function Syntax(compile) {
@@ -95,8 +97,48 @@ var COFY = (function (nil) {
     };
   }());
 
+  var print = (function () {
+
+    function print(s_expr) {
+      if (s_expr === null)
+        return '()';
+      if (typeof s_expr === 'string')
+        return escape_string(s_expr);
+      if (isSymbol(s_expr))
+        return s_expr.name;
+      if (isCons(s_expr))
+        return print_list(s_expr);
+      return '' + s_expr;
+    }
+
+    function print_list(list) {
+      return '(' + print_to_array(list).join(' ') + ')';
+    }
+
+    function print_to_array(list) {
+      var strings = [], rest;
+      for (rest = list; isCons(rest); rest = rest.tail)
+        strings.push(print(rest.head));
+      if (rest !== null)
+        strings.push(': ' + print(rest));
+      return strings;
+    }
+
+    function escape_string(s) {
+      s = s.replace(/([\\"])/g, '\\$1');
+      for (var key in escape_chars)
+        if (contains(escape_chars, key))
+          s = s.replace(key, escape_chars[key]);
+      return '"' + s + '"';
+    }
+
+    var escape_chars = { '\n': '\\n', '\r': '\\r', '\t': '\\t' };
+
+    return print;
+  }());
+
   var compile = (function () {
-    var global_env;
+    var global_env = create_global_env();
 
     function evaluate(expr, env) {
       return typeof expr === 'function' ? expr(env) : expr;
@@ -251,7 +293,7 @@ var COFY = (function (nil) {
       return true;
     }
 
-    global_env = (function () {
+    function create_global_env() {
       var bindings = {
         'quote': Syntax(function (s_expr) { return s_expr.head; }),
         'fn': Syntax(compile_fn),
@@ -288,18 +330,37 @@ var COFY = (function (nil) {
       for (var i = 0; i < math_names.length; i++)
         bindings[math_names[i]] = Math[math_names[i]];
       return bindings;
-    }());
+    }
+
     return function (s_expr) {
       var expr = compile_do(s_expr);
-      return function () {
-        return evaluate(expr, global_env);
+      return function (clean) {
+        return evaluate(expr, clean ? create_global_env() : global_env);
       };
     };
   }());
+
   return {
     read: parse,
     compile: compile,
-    eval: function (s_expr) { return compile(s_expr)(); },
-    read_eval: function (s) { return compile(parse(s))(); }
+    eval: function (s_expr) {
+      return compile(s_expr)();
+    },
+    clean_eval: function (s_expr) {
+      return compile(s_expr)(true);
+    },
+    read_eval: function (s) {
+      return compile(parse(s))();
+    },
+    clean_read_eval: function (s) {
+      return compile(parse(s))(true);
+    },
+    print: print,
+    read_eval_print: function (s) {
+      return print(compile(parse(s))());
+    },
+    clean_read_eval_print: function (s) {
+      return print(compile(parse(s))(true));
+    }
   };
 }());
