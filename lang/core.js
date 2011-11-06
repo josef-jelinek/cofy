@@ -19,8 +19,16 @@ var COFY = (function (nil) {
     this.tail = tail;
   }
 
+  function Syntax(compile) {
+    if (!isSyntax(this))
+      return new Syntax(compile);
+    this.compile = compile;
+    this.toString = function () { return '[object Syntax]'; }
+  }
+
   function isSymbol(x) { return x instanceof Symbol; }
   function isCons(x) { return x instanceof Cons; }
+  function isSyntax(x) { return x instanceof Syntax; }
 
   var parse = (function () {
     var token_actions, escape_chars, tokens, index;
@@ -88,60 +96,73 @@ var COFY = (function (nil) {
   }());
 
   var compile = (function () {
-    var compile_actions, global_env;
+    var global_env;
 
     function evaluate(expr, env) {
       return typeof expr === 'function' ? expr(env) : expr;
     }
 
-    function compile(expr) {
-      if (expr instanceof Symbol)
-        return function (env) { return env[expr.name]; };
-      if (!isCons(expr))
-        return expr;
-      if (isSymbol(expr.head) && contains(compile_actions, expr.head.name))
-        return compile_actions[expr.head.name](expr.tail);
-      return compile_call(map(compile, expr));
+    function error(message) {
+      throw { name: 'RuntimeError', message: message || 'Unspecified error' };
     }
 
-    function compile_call(expr) {
+    function compile(s_expr) {
+      if (s_expr instanceof Symbol)
+        return function (env) { return env[s_expr.name]; };
+      if (!isCons(s_expr))
+        return s_expr;
+      var head = s_expr.head;
+      if (isSymbol(head) && has_syntax_defined(head.name))
+        return compile_syntax(head.name, s_expr.tail);
+      return compile_call(s_expr);
+    }
+
+    function has_syntax_defined(name) {
+      return contains(global_env, name) && isSyntax(global_env[name]);
+    }
+
+    function compile_syntax(name, s_expr) {
+      return global_env[name].compile(s_expr);
+    }
+
+    function compile_call(s_expr) {
+      var expr = map(compile, s_expr);
       return function (env) {
-        var values = [];
+        var fn = evaluate(expr.head, env), values = [];
         for (var list = expr.tail; list; list = list.tail)
           values.push(evaluate(list.head, env));
-        return evaluate(expr.head, env).apply(env, values);
+        return fn.apply(env, values);
       };
     }
 
-    function compile_fn(expr) {
-      var params = symbols_to_array(expr.head), body = compile_do(expr.tail);
+    function compile_fn(s_expr) {
+      var names = get_name_array(s_expr.head), body = compile_do(s_expr.tail);
       return function (env) {
         return function () {
-          return evaluate(body, make_env(params, arguments, env));
+          return evaluate(body, make_env(names, arguments, env));
         };
       };
     }
 
-    function compile_if(expr) {
-      var cond = compile(expr.head),
-          t = compile(expr.tail.head),
-          f = compile(expr.tail.tail.head);
+    function compile_if(s_expr) {
+      var cond = compile(s_expr.head),
+          t = compile(s_expr.tail.head),
+          f = compile(s_expr.tail.tail.head);
       return function (env) {
         return evaluate(evaluate(cond, env) ? t : f, env);
       };
     }
 
-    function compile_def(expr) {
-      var name = expr.head, expr = compile(expr.tail.head);
+    function compile_def(s_expr) {
+      var pairs = get_def_pairs(s_expr);
       return function (env) {
-        if (contains(env, name))
-          throw { name: 'RuntimeError', message: 'Redefining ' + name };
-        env[name] = evaluate(expr, env);
+        for (var rest = pairs; rest; rest = rest.tail)
+          define_binding(rest.head.head, rest.head.tail, env);
       };
     }
 
-    function compile_do(expr) {
-      var seq = map(compile, expr);
+    function compile_do(s_expr) {
+      var seq = map(compile, s_expr);
       return function (env) {
         var res;
         for (var body = seq; body; body = body.tail)
@@ -159,7 +180,20 @@ var COFY = (function (nil) {
       return env;
     }
 
-    function symbols_to_array(list) {
+    function define_binding(name, expr, env) {
+      if (contains(env, name))
+        error('Redefining ' + name);
+      env[name] = evaluate(expr, env);
+    }
+
+    function get_def_pairs(s_expr) {
+      if (!s_expr)
+        return null;
+      var pair = Cons(s_expr.head.name, compile(s_expr.tail.head));
+      return Cons(pair, get_def_pairs(s_expr.tail.tail));
+    }
+
+    function get_name_array(list) {
       var names = [];
       for (var rest = list; rest; rest = rest.tail)
         names.push(rest.head.name);
@@ -217,15 +251,13 @@ var COFY = (function (nil) {
       return true;
     }
 
-    compile_actions = {
-      'quote': function (expr) { return expr.head; },
-      'fn': compile_fn,
-      'if': compile_if,
-      'def': compile_def,
-      'do': compile_do
-    };
     global_env = (function () {
       var bindings = {
+        'quote': Syntax(function (s_expr) { return s_expr.head; }),
+        'fn': Syntax(compile_fn),
+        'if': Syntax(compile_if),
+        'def': Syntax(compile_def),
+        'do': Syntax(compile_do),
         'nil': nil,
         'true': true,
         'false': false,
@@ -245,7 +277,6 @@ var COFY = (function (nil) {
         'first': function (x) { return x.head; },
         'rest': function (x) { return x.tail; },
         'pair?': function (x) { return isCons(x); },
-        'symbol': function (s) { return Symbol(s); },
         'symbol?': function (x) { return isSymbol(x); },
         'nil?': function (x) { return x === nil; }
       };
@@ -258,17 +289,17 @@ var COFY = (function (nil) {
         bindings[math_names[i]] = Math[math_names[i]];
       return bindings;
     }());
-    return function (expr) {
-      var compiled = compile_do(expr);
+    return function (s_expr) {
+      var expr = compile_do(s_expr);
       return function () {
-        return evaluate(compiled, global_env);
+        return evaluate(expr, global_env);
       };
     };
   }());
   return {
     read: parse,
     compile: compile,
-    eval: function (expr) { return compile(expr)(); },
+    eval: function (s_expr) { return compile(s_expr)(); },
     read_eval: function (s) { return compile(parse(s))(); }
   };
 }());
