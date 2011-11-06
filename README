@@ -1,0 +1,10 @@
+
+to do (random order):
+  - a way for iteration (either trampoline or recur syntax)
+  - controlled mutable references
+  - full javascript interop (or reasonably limited for security)
+  - running scripts from application/x-cofy script tags
+  - language library (in cofy itself)
+
+  - lazy sequences (maybe just library)
+  - compile mode using eval (after having benchmarks)
