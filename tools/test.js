@@ -11,6 +11,15 @@ var TEST = (function (nil) {
       assert_calls++;
       return fail(message || 'failed');
     },
+    throwsError: function (f, message) {
+      assert_calls++;
+      var succeeded = false;
+      try {
+        f();
+        succeeded = true;
+      } catch (e) {}
+      return !succeeded || fail(message || 'no error thrown');
+    },
     isTrue: function (cond, message) {
       assert_calls++;
       return cond === true || fail(message || 'not true');
