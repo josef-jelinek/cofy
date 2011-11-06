@@ -1,5 +1,6 @@
 
 to do (random order):
+  - static environment analysis -> syntax macros!
   - a way for iteration (either trampoline or recur syntax)
   - controlled mutable references
   - full javascript interop (or reasonably limited for security)
