@@ -14,9 +14,12 @@
 </head>
 <body>
   <div><textarea id="input">(def inc (fn (n) (+ n 1)))
-(def map (fn (f x)
-             (if (= x ()) ()
-                          (cons (f (first x)) (map f (rest x))))))
+(def map
+     (fn (f x)
+         (if (= x ())
+             ()
+             (cons (f (first x))
+                   (map f (rest x))))))
 
 (map inc '(1 2 3))</textarea></div>
   <input type="button" value="Evaluate" onclick="read_eval_print(document.getElementById('input').value)">
