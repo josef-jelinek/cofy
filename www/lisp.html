@@ -15,8 +15,8 @@
 <body>
   <div><textarea id="input">(def inc (fn (n) (+ n 1)))
 (def map (fn (f x)
-             (if (empty? x) '()
-                            (cons (f (first x)) (map f (rest x))))))
+             (if (= x ()) ()
+                          (cons (f (first x)) (map f (rest x))))))
 
 (map inc '(1 2 3))</textarea></div>
   <input type="button" value="Evaluate" onclick="read_eval_print(document.getElementById('input').value)">
@@ -24,23 +24,26 @@
   <script src="../tools/js.js"></script>
   <script src="../lang/core.js"></script>
   <script>
-    var OUT = function() {
-      var html_encode = function(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-      var is_nil = function(x) { return x === null || x === undefined; };
-      var is_array = function(x) { return typeof x === 'object' && x.join && x.map; };
-      var array_to_string = function(x) { return '(' + x.map(to_string).join(' ') + ')'; };
-      var to_string = function(x) { return is_nil(x) ? 'nil' : is_array(x) ? array_to_string(x) : '' + x; };
-      var to_html = function(x) { return html_encode(to_string(x)); }
-      var attempt = 1;
-      return {
-        print: function(x) { document.getElementById('output').innerHTML +=  '<small>' + attempt++ + '</small> ' + to_html(x) + '<br>'; },
-        error: function(e) { document.getElementById('output').innerHTML +=  '<i>' + e.name + ": " + e.message  + '</i><br>'; }
+    var OUT = (function() {
+      var attempt = 1, out = document.getElementById('output');
+
+      function html_encode (s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
       };
-    }();
+
+      return {
+        display: function (s) {
+          out.innerHTML += '<small>' + attempt++ + '</small> ' + html_encode(s) + '<br>';
+        },
+        error: function (e) {
+          out.innerHTML += '<i>' + e.name + ": " + e.message  + '</i><br>';
+        }
+      };
+    }());
 
     function read_eval_print(s) {
       try {
-        OUT.print(COFY.eval(COFY.read(s)));
+        OUT.display(COFY.clean_read_eval_print(s));
       } catch (e) {
         OUT.error(e);
       }
