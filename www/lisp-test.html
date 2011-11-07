@@ -28,6 +28,10 @@
           this.isSame(COFY.read('((1) 2)').head.head.head, 1);
           this.isSame(COFY.read('((1) 2)').head.tail.head, 2);
           this.isSame(COFY.read('((1) 2)').head.tail.tail, null);
+          this.isSame(COFY.read('(1 : 2)').head.head, 1);
+          this.isSame(COFY.read('(1 : 2)').head.tail, 2);
+          this.isSame(COFY.read('(1 2 : 3)').head.tail.head, 2);
+          this.isSame(COFY.read('(1 2 : 3)').head.tail.tail, 3);
         },
         multiple: function () {
           this.isSame(COFY.read('0 1').head, 0);
@@ -139,15 +143,23 @@
           this.isSame(COFY.read_eval_print("'hello"), 'hello');
           this.isSame(COFY.read_eval_print('()'), '()');
           this.isSame(COFY.read_eval_print("'()"), '()');
-          this.isSame(COFY.read_eval_print("'(1)"), '(1)');
-          this.isSame(COFY.read_eval_print("'(1 2)"), '(1 2)');
-          this.isSame(COFY.read_eval_print("'((1))"), '((1))');
+        },
+        jsconstants: function () {
           this.isSame(COFY.read_eval_print('true'), 'true');
           this.isSame(COFY.read_eval_print('false'), 'false');
           this.isSame(COFY.read_eval_print('nil'), 'undefined');
+        },
+        lists: function () {
+          this.isSame(COFY.read_eval_print("'(1)"), '(1)');
+          this.isSame(COFY.read_eval_print("'(1 2)"), '(1 2)');
+          this.isSame(COFY.read_eval_print("'((1))"), '((1))');
           this.isSame(COFY.read_eval_print('(cons 1 2)'), '(1 : 2)');
+          this.isSame(COFY.read_eval_print("'(1 : 2)"), '(1 : 2)');
           this.isSame(COFY.read_eval_print('(cons 0 (cons 1 2))'), '(0 1 : 2)');
-          this.isSame(COFY.read_eval_print('(cons (cons 1 2) 3)'), '((1 : 2) : 3)');
+          this.isSame(COFY.read_eval_print("'(0 : (1 : 2))"), '(0 1 : 2)');
+          this.isSame(COFY.read_eval_print("'((1 : 2) : 3)"), '((1 : 2) : 3)');
+          this.isSame(COFY.read_eval_print("'(0 : (1 : ()))"), '(0 1)');
+          this.isSame(COFY.read_eval_print("'(0 1 : ())"), '(0 1)');
         }
       }
     };

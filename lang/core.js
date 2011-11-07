@@ -39,16 +39,35 @@ var COFY = (function (nil) {
       var token = read_token();
       if (contains(token_actions, token))
         return token_actions[token]();
-      if (token[0] === '"')
+      if (token.charAt(0) === '"')
         return get_string(token);
       return isNaN(token) ? Symbol(token) : +token;
     }
 
     function read_seq() {
-      if (index >= tokens.length || tokens[index] === ')')
+      if (index >= tokens.length)
         return null;
-      var expr = read_expr(tokens);
+      var expr = read_expr();
       return Cons(expr, read_seq());
+    }
+
+    function read_list() {
+      if (follows(')'))
+        return null;
+      var expr = read_expr();
+      if (follows(':') && match(':'))
+        return Cons(expr, read_expr());
+      return Cons(expr, read_list());
+    }
+
+    function follows(token) {
+      return index < tokens.length && tokens[index] === token;
+    }
+
+    function match(token) {
+      if (read_token() !== token)
+        error('Expected "' + token + '"');
+      return true;
     }
 
     function read_token() {
@@ -81,9 +100,8 @@ var COFY = (function (nil) {
         return Cons(Symbol('quote'), Cons(read_expr(), null));
       },
       '(': function () {
-        var expr = read_seq();
-        if (read_token() !== ')')
-          error('Expected ")"');
+        var expr = read_list();
+        match(')');
         return expr;
       }
     };

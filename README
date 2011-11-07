@@ -1,6 +1,5 @@
 
 to do (random order):
-  - cons (:) literals
   - regular expressions
   - static environment analysis -> syntax macros!
   - a way for iteration (either trampoline or recur syntax)
