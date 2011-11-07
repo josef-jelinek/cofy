@@ -1,5 +1,7 @@
 
 to do (random order):
+  - cons (:) literals
+  - regular expressions
   - static environment analysis -> syntax macros!
   - a way for iteration (either trampoline or recur syntax)
   - controlled mutable references
@@ -7,5 +9,7 @@ to do (random order):
   - running scripts from application/x-cofy script tags
   - language library (in cofy itself)
 
+  - persistent data structures
   - lazy sequences (maybe just library)
   - compile mode using eval (after having benchmarks)
+  - server-side compiler to javascript
