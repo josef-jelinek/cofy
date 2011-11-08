@@ -44,15 +44,15 @@
           this.isSame(COFY.read_eval('0'), 0);
           this.isSame(COFY.read_eval('"hello"'), 'hello');
           this.isSame(COFY.read_eval("'hello").name, 'hello');
-          this.isSame(COFY.read_eval('()'), null);
-          this.isSame(COFY.read_eval("'()"), null);
+          this.isNull(COFY.read_eval('()'));
+          this.isNull(COFY.read_eval("'()"));
           this.isSame(COFY.read_eval("'(1)").head, 1);
-          this.isSame(COFY.read_eval("'(1)").tail, null);
+          this.isNull(COFY.read_eval("'(1)").tail);
           this.isSame(COFY.read_eval("'((1))").head.head, 1);
           this.isSame(COFY.read_eval('0 1'), 1);
           this.isSame(COFY.read_eval('true'), true);
           this.isSame(COFY.read_eval('false'), false);
-          this.isSame(COFY.read_eval('nil'), undefined);
+          this.isUndefined(COFY.read_eval('nil'));
           this.isSame(COFY.read_eval("'hello"), COFY.read_eval("'hello"));
         },
         identity: function () {
@@ -119,12 +119,23 @@
           this.isSame(COFY.read_eval('((fn () (def if 1) if))'), 1);
         },
         args: function () {
-          this.isSame(COFY.read_eval('((fn (arg) arg))'), undefined);
+          this.isUndefined(COFY.read_eval('((fn (arg) arg))'));
           this.isSame(COFY.read_eval('((fn (arg) arg) 1)'), 1);
           this.isSame(COFY.read_eval('((fn (arg) arg) 1 2)'), 1);
-          this.isSame(COFY.read_eval('(((fn (arg) (fn (arg) arg)) 1))'), undefined);
+          this.isUndefined(COFY.read_eval('(((fn (arg) (fn (arg) arg)) 1))'));
           this.isSame(COFY.read_eval('(((fn (arg) (fn (arg) arg))) 1)'), 1);
-          this.isSame(COFY.read_eval('((fn (arg) ((fn (arg) arg))) 1)'), undefined);
+          this.isUndefined(COFY.read_eval('((fn (arg) ((fn (arg) arg))) 1)'));
+        },
+        varargs: function () {
+          this.isNull(COFY.read_eval('((fn arglist arglist))'));
+          this.isTrue(COFY.read_eval("(= ((fn arglist arglist) 1) '(1))"));
+          this.isTrue(COFY.read_eval("(= ((fn arglist arglist) 1 2) '(1 2))"));
+          this.isSame(COFY.read_eval('((fn (arg : rest) arg) 1)'), 1);
+          this.isNull(COFY.read_eval('((fn (arg : rest) rest) 1)'));
+          this.isSame(COFY.read_eval('((fn (arg1 arg2 : rest) arg1) 1)'), 1);
+          this.isUndefined(COFY.read_eval('((fn (arg1 arg2 : rest) arg2) 1)'));
+          this.isNull(COFY.read_eval('((fn (arg1 arg2 : rest) rest) 1)'));
+          this.isTrue(COFY.read_eval("(= ((fn (arg : rest) rest) 1 2 3) '(2 3))"));
         },
         interop: function () {
           this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);
@@ -168,7 +179,6 @@
 <body onload="run()">
   <div id="result"></div>
   <div id="log"></div>
-  <script src="../tools/js.js"></script>
   <script src="../tools/test.js"></script>
   <script src="../lang/core.js"></script>
   <script>

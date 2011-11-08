@@ -1,15 +1,43 @@
-// requires object(prototype) and contains(object, key) functions defined
 var COFY = (function (nil) {
   'use strict';
+  var createObjectFromPrototype = Object.create || function (o) {
+    function F() {}
+    F.prototype = o || Object.prototype;
+    return new F();
+  };
+  var sealObject = Object.seal || function (o) {};
+  var freezeObject = Object.freeze || function (o) {};
+  var freezeObjectProperty = Object.defineProperty  && Object.freeze &&
+    function (obj, prop) {
+      Object.defineProperty(obj, prop, {
+        writable: false, enumerable: true, configurable: false
+      });
+    } || function () {};
+  var defineFrozenProperty = Object.defineProperty && Object.freeze &&
+    function (obj, prop, value) {
+      Object.defineProperty(obj, prop, {
+        value: value, writable: false, enumerable: true, configurable: false
+      });
+    } || function (obj, prop, value) {
+      if (objectHasOwnProperty(env, name))
+        error('Redefining ' + name);
+      obj[prop] = value;
+    };
+
+  function objectHasOwnProperty(o, key) {
+    'use strict';
+    return Object.prototype.hasOwnProperty.call(o, key);
+  }
+
   var symbols = {};
 
   function Symbol(s) {
-    if (contains(symbols, s))
+    if (objectHasOwnProperty(symbols, s))
       return symbols[s];
     if (!isSymbol(this))
       return new Symbol(s);
     this.name = s;
-    this.toString = function () { return '[object Symbol]'; }
+    freezeObject(this);
     symbols[s] = this;
   }
 
@@ -18,18 +46,26 @@ var COFY = (function (nil) {
       return new Cons(head, tail);
     this.head = head;
     this.tail = tail;
-    this.toString = function () { return '[object Cons]'; }
+    freezeObject(this);
+  }
+
+  function Ref(value) {
+    if (!isRef(this))
+      return new Ref(value);
+    this.value = value;
+    sealObject(this);
   }
 
   function Syntax(compile) {
     if (!isSyntax(this))
       return new Syntax(compile);
     this.compile = compile;
-    this.toString = function () { return '[object Syntax]'; }
+    freezeObject(this);
   }
 
   function isSymbol(x) { return x instanceof Symbol; }
   function isCons(x) { return x instanceof Cons; }
+  function isRef(x) { return x instanceof Ref; }
   function isSyntax(x) { return x instanceof Syntax; }
 
   var parse = (function () {
@@ -37,7 +73,7 @@ var COFY = (function (nil) {
 
     function read_expr() {
       var token = read_token();
-      if (contains(token_actions, token))
+      if (objectHasOwnProperty(token_actions, token))
         return token_actions[token]();
       if (token.charAt(0) === '"')
         return get_string(token);
@@ -79,7 +115,7 @@ var COFY = (function (nil) {
     function get_string(s) {
       s = s.replace(/^"|"$/g, '').replace(/\\([\\"'])/g, '$1');
       for (var key in escape_chars)
-        if (contains(escape_chars, key))
+        if (objectHasOwnProperty(escape_chars, key))
           s = s.replace(key, escape_chars[key]);
       return s;
     }
@@ -145,7 +181,7 @@ var COFY = (function (nil) {
     function escape_string(s) {
       s = s.replace(/([\\"])/g, '\\$1');
       for (var key in escape_chars)
-        if (contains(escape_chars, key))
+        if (objectHasOwnProperty(escape_chars, key))
           s = s.replace(key, escape_chars[key]);
       return '"' + s + '"';
     }
@@ -178,7 +214,8 @@ var COFY = (function (nil) {
     }
 
     function has_syntax_defined(name) {
-      return contains(global_env, name) && isSyntax(global_env[name]);
+      return objectHasOwnProperty(global_env, name) &&
+             isSyntax(global_env[name]);
     }
 
     function compile_syntax(name, s_expr) {
@@ -189,17 +226,17 @@ var COFY = (function (nil) {
       var expr = map(compile, s_expr);
       return function (env) {
         var fn = evaluate(expr.head, env), values = [];
-        for (var list = expr.tail; list; list = list.tail)
-          values.push(evaluate(list.head, env));
+        for (var rest = expr.tail; isCons(rest); rest = rest.tail)
+          values.push(evaluate(rest.head, env));
         return fn.apply(env, values);
       };
     }
 
     function compile_fn(s_expr) {
-      var names = get_name_array(s_expr.head), body = compile_do(s_expr.tail);
+      var names = s_expr.head, body = compile_do(s_expr.tail);
       return function (env) {
         return function () {
-          return evaluate(body, make_env(names, arguments, env));
+          return evaluate(body, bind_args(names, arguments, env));
         };
       };
     }
@@ -216,7 +253,7 @@ var COFY = (function (nil) {
     function compile_def(s_expr) {
       var pairs = get_def_pairs(s_expr);
       return function (env) {
-        for (var rest = pairs; rest; rest = rest.tail)
+        for (var rest = pairs; isCons(rest); rest = rest.tail)
           define_binding(rest.head.head, rest.head.tail, env);
       };
     }
@@ -225,25 +262,30 @@ var COFY = (function (nil) {
       var seq = map(compile, s_expr);
       return function (env) {
         var res;
-        for (var body = seq; body; body = body.tail)
-          res = evaluate(body.head, env);
+        for (var rest = seq; isCons(rest); rest = rest.tail)
+          res = evaluate(rest.head, env);
         return res;
       };
     }
 
-    function make_env(names, values, parent_env) {
-      var env = object(parent_env), n = Math.min(values.length, names.length);
-      for (var i = 0; i < n; i++)
-        env[names[i]] = values[i];
-      for (var j = values.length; j < names.length; j++)
-        env[names[i]] = nil;
+    function bind_args(names, values, parent_env) {
+      var env = createObjectFromPrototype(parent_env), i = 0;
+      for (var rest = names; isCons(rest); rest = rest.tail)
+        defineFrozenProperty(env, rest.head.name, i < values.length ? values[i++] : nil);
+      if (rest)
+        defineFrozenProperty(env, rest.name, array_tail_to_list(values, i));
       return env;
     }
 
+    function array_tail_to_list(values, from) {
+      var rest = null;
+      for (var i = values.length - 1; i >= from; i--)
+        rest = Cons(values[i], rest);
+      return rest;
+    }
+
     function define_binding(name, expr, env) {
-      if (contains(env, name))
-        error('Redefining ' + name);
-      env[name] = evaluate(expr, env);
+      defineFrozenProperty(env, name, evaluate(expr, env));
     }
 
     function get_def_pairs(s_expr) {
@@ -251,13 +293,6 @@ var COFY = (function (nil) {
         return null;
       var pair = Cons(s_expr.head.name, compile(s_expr.tail.head));
       return Cons(pair, get_def_pairs(s_expr.tail.tail));
-    }
-
-    function get_name_array(list) {
-      var names = [];
-      for (var rest = list; rest; rest = rest.tail)
-        names.push(rest.head.name);
-      return names;
     }
 
     function map(f, list) {
@@ -347,6 +382,9 @@ var COFY = (function (nil) {
       ];
       for (var i = 0; i < math_names.length; i++)
         bindings[math_names[i]] = Math[math_names[i]];
+      for (var binding in bindings)
+        if (objectHasOwnProperty(bindings, binding))
+          freezeObjectProperty(bindings, binding);
       return bindings;
     }
 
