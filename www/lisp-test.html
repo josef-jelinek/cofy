@@ -50,8 +50,8 @@
           this.isNull(COFY.read_eval("'(1)").tail);
           this.isSame(COFY.read_eval("'((1))").head.head, 1);
           this.isSame(COFY.read_eval('0 1'), 1);
-          this.isSame(COFY.read_eval('true'), true);
-          this.isSame(COFY.read_eval('false'), false);
+          this.isTrue(COFY.read_eval('true'));
+          this.isFalse(COFY.read_eval('false'));
           this.isUndefined(COFY.read_eval('nil'));
           this.isSame(COFY.read_eval("'hello"), COFY.read_eval("'hello"));
         },
