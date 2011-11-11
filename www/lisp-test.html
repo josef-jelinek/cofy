@@ -126,6 +126,7 @@
           this.isSame(COFY.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
           this.isSame(COFY.read_eval('((fn () (def a 1 b 2) (+ a b)))'), 3);
           this.isSame(COFY.read_eval('a'), 1);
+          this.isSame(COFY.read_eval('(def (af x) (+ x 10)) (af 1)'), 11);
         },
         special_forms: function () {
           this.throwsError(function () { COFY.read_eval('(def if 1) if'); });

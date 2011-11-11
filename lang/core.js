@@ -242,10 +242,19 @@ var COFY = (function (nil) {
     }
 
     function compile_def(s_expr) {
+      if (isCons(s_expr.head))
+        return compile_def_fn(s_expr);
       var pairs = get_def_pairs(s_expr);
       return function (env) {
         for (var rest = pairs; isCons(rest); rest = rest.tail)
           define_binding(rest.head.head, rest.head.tail, env);
+      };
+    }
+
+    function compile_def_fn(s_expr) {
+      var fn = compile_fn(Cons(s_expr.head.tail, s_expr.tail));
+      return function (env) {
+        define_binding(s_expr.head.head.name, fn, env);
       };
     }
 
