@@ -3,7 +3,6 @@ to do (random order):
   - regular expressions
   - static environment analysis -> syntax macros!
   - a way for iteration (either trampoline or recur syntax)
-  - controlled mutable references
   - full javascript interop (or reasonably limited for security)
   - running scripts from application/x-cofy script tags
   - language library (in cofy itself)

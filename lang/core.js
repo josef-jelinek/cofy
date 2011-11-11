@@ -315,6 +315,12 @@ var COFY = (function (nil) {
       return values;
     }
 
+    function swap(variable, value) {
+      var v = variable.value;
+      variable.value = value;
+      return v;
+    }
+
     function equal(a, b) {
       return a === b || isCons(a) && isCons(b) &&
         equal(a.head, b.head) && equal(a.tail, b.tail);
@@ -354,8 +360,20 @@ var COFY = (function (nil) {
         'def': Syntax(compile_def),
         'do': Syntax(compile_do),
         'nil': nil,
+        'nil?': function (x) { return x === nil; },
         'true': true,
         'false': false,
+        'string?': isString,
+        'fn?': isFunction,
+        'symbol?': isSymbol,
+        'cons': function (a, b) { return Cons(a, b); },
+        'cons?': isCons,
+        'first': function (x) { return x.head; },
+        'rest': function (x) { return x.tail; },
+        'var': Var,
+        'var?': isVar,
+        'deref': function (x) { return x.value; },
+        'swap!': swap,
         'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
         '+': function () { return sum.apply(null, arguments); },
         '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
@@ -367,15 +385,7 @@ var COFY = (function (nil) {
         '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
         '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
         '=': function (a, b) { return equal(a, b); },
-        'identical?': function (a, b) { return a === b; },
-        'cons': function (a, b) { return Cons(a, b); },
-        'first': function (x) { return x.head; },
-        'rest': function (x) { return x.tail; },
-        'string?': isString,
-        'fn?': isFunction,
-        'symbol?': isSymbol,
-        'cons?': isCons,
-        'nil?': function (x) { return x === nil; }
+        'identical?': function (a, b) { return a === b; }
       };
       var math_names = [
         'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
