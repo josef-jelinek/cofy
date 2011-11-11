@@ -199,10 +199,18 @@ var COFY = (function (nil) {
 
     function compile(s_expr) {
       if (isSymbol(s_expr))
-        return function (env) { return env[s_expr.name]; };
+        return compile_symbol(s_expr);
       if (!isCons(s_expr))
         return s_expr;
       return has_syntax_defined(s_expr.head) ? compile_syntax(s_expr) : compile_call(s_expr);
+    }
+
+    function compile_symbol(s_expr) {
+      return function (env) {
+        if (!(s_expr.name in env))
+          error('Symbol "' + print(s_expr) + '" not defined');
+        return env[s_expr.name];
+      };
     }
 
     function has_syntax_defined(s_expr) {
@@ -217,6 +225,8 @@ var COFY = (function (nil) {
       var expr = map(compile, s_expr);
       return function (env) {
         var fn = evaluate(expr.head, env), values = [];
+        if (!isFunction(fn))
+          error('Not a function: ' + print(s_expr.head));
         for (var rest = expr.tail; isCons(rest); rest = rest.tail)
           values.push(evaluate(rest.head, env));
         return fn.apply(null, values);
