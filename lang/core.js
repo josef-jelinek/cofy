@@ -63,6 +63,8 @@ var COFY = (function (nil) {
     freezeObject(this);
   }
 
+  function isString(x) { return typeof x === 'string'; }
+  function isFunction(x) { return typeof x === 'function'; }
   function isSymbol(x) { return x instanceof Symbol; }
   function isCons(x) { return x instanceof Cons; }
   function isVar(x) { return x instanceof Var; }
@@ -154,13 +156,11 @@ var COFY = (function (nil) {
   var print = (function () {
 
     function print(s_expr) {
-      if (s_expr === null)
-        return '()';
-      if (typeof s_expr === 'string')
-        return escape_string(s_expr);
+      if (isString(s_expr))
+        return encode_string(s_expr);
       if (isSymbol(s_expr))
         return s_expr.name;
-      if (isCons(s_expr))
+      if (s_expr === null || isCons(s_expr))
         return print_list(s_expr);
       return '' + s_expr;
     }
@@ -173,7 +173,7 @@ var COFY = (function (nil) {
       return '(' + strings.join(' ') + tail + ')';
     }
 
-    function escape_string(s) {
+    function encode_string(s) {
       s = s.replace(/([\\"])/g, '\\$1');
       for (var key in escape_chars)
         if (objectHasOwnProperty(escape_chars, key))
@@ -190,7 +190,7 @@ var COFY = (function (nil) {
     var global_env = create_global_env();
 
     function evaluate(expr, env) {
-      return typeof expr === 'function' ? expr(env) : expr;
+      return isFunction(expr) ? expr(env) : expr;
     }
 
     function error(message) {
@@ -219,7 +219,7 @@ var COFY = (function (nil) {
         var fn = evaluate(expr.head, env), values = [];
         for (var rest = expr.tail; isCons(rest); rest = rest.tail)
           values.push(evaluate(rest.head, env));
-        return fn.apply(env, values);
+        return fn.apply(null, values);
       };
     }
 
@@ -289,6 +289,13 @@ var COFY = (function (nil) {
       return !list ? list : Cons(f(list.head), map(f, list.tail));
     }
 
+    function list_to_array(list) {
+      var values = [];
+      for (var rest = list; isCons(rest); rest = rest.tail)
+        values.push(rest.head);
+      return values;
+    }
+
     function equal(a, b) {
       return a === b || isCons(a) && isCons(b) &&
         equal(a.head, b.head) && equal(a.tail, b.tail);
@@ -330,23 +337,25 @@ var COFY = (function (nil) {
         'nil': nil,
         'true': true,
         'false': false,
+        'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
         '+': function () { return sum.apply(null, arguments); },
         '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
         '*': function (a, b) { return product.apply(null, arguments); },
         '/': function (a, b) { return a / b; },
+        'remainder': function (a, b) { return a % b; },
         '<': function () { return check_array_pairs(arguments, lower_than); },
         '>': function () { return check_array_pairs(arguments, greater_than); },
         '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
         '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
         '=': function (a, b) { return equal(a, b); },
         'identical?': function (a, b) { return a === b; },
-        'remainder': function (a, b) { return a % b; },
-        'not': function (x) { return !x; },
         'cons': function (a, b) { return Cons(a, b); },
         'first': function (x) { return x.head; },
         'rest': function (x) { return x.tail; },
-        'pair?': function (x) { return isCons(x); },
-        'symbol?': function (x) { return isSymbol(x); },
+        'string?': isString,
+        'fn?': isFunction,
+        'symbol?': isSymbol,
+        'cons?': isCons,
         'nil?': function (x) { return x === nil; }
       };
       var math_names = [

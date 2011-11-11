@@ -150,6 +150,14 @@
           this.isNull(COFY.read_eval('((fn (arg1 arg2 : rest) rest) 1)'));
           this.isTrue(COFY.read_eval("(= ((fn (arg : rest) rest) 1 2 3) '(2 3))"));
         },
+        apply: function () {
+          this.isTrue(COFY.read_eval("(= (apply (fn (arg : rest) rest) '(1 2 3)) '(2 3))"));
+          this.isTrue(COFY.read_eval("(= (apply (fn args args) '(1 2 3)) '(1 2 3))"));
+          this.isTrue(COFY.read_eval("(= (apply (fn args args) '(1 2 : 3)) '(1 2))"));
+          this.isNull(COFY.read_eval("(apply (fn args args) ())"));
+          this.isNull(COFY.read_eval("(apply (fn args args))"));
+          this.throwsError(function () { COFY.read_eval("(apply)"); });
+        },
         interop: function () {
           this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);
           this.isSame(COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2), 3);
