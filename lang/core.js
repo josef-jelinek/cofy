@@ -49,9 +49,9 @@ var COFY = (function (nil) {
     freezeObject(this);
   }
 
-  function Ref(value) {
-    if (!isRef(this))
-      return new Ref(value);
+  function Var(value) {
+    if (!isVar(this))
+      return new Var(value);
     this.value = value;
     sealObject(this);
   }
@@ -65,7 +65,7 @@ var COFY = (function (nil) {
 
   function isSymbol(x) { return x instanceof Symbol; }
   function isCons(x) { return x instanceof Cons; }
-  function isRef(x) { return x instanceof Ref; }
+  function isVar(x) { return x instanceof Var; }
   function isSyntax(x) { return x instanceof Syntax; }
 
   var parse = (function () {
@@ -166,16 +166,11 @@ var COFY = (function (nil) {
     }
 
     function print_list(list) {
-      return '(' + print_to_array(list).join(' ') + ')';
-    }
-
-    function print_to_array(list) {
       var strings = [], rest;
       for (rest = list; isCons(rest); rest = rest.tail)
         strings.push(print(rest.head));
-      if (rest !== null)
-        strings.push(': ' + print(rest));
-      return strings;
+      var tail = rest === null ? '' : ' : ' + print(rest);
+      return '(' + strings.join(' ') + tail + ')';
     }
 
     function escape_string(s) {
@@ -199,27 +194,23 @@ var COFY = (function (nil) {
     }
 
     function error(message) {
-      throw { name: 'RuntimeError', message: message || 'Unspecified error' };
+      throw { name: 'RuntimeError', message: message || 'An error' };
     }
 
     function compile(s_expr) {
-      if (s_expr instanceof Symbol)
+      if (isSymbol(s_expr))
         return function (env) { return env[s_expr.name]; };
       if (!isCons(s_expr))
         return s_expr;
-      var head = s_expr.head;
-      if (isSymbol(head) && has_syntax_defined(head.name))
-        return compile_syntax(head.name, s_expr.tail);
-      return compile_call(s_expr);
+      return has_syntax_defined(s_expr.head) ? compile_syntax(s_expr) : compile_call(s_expr);
     }
 
-    function has_syntax_defined(name) {
-      return objectHasOwnProperty(global_env, name) &&
-             isSyntax(global_env[name]);
+    function has_syntax_defined(s_expr) {
+      return isSymbol(s_expr) && isSyntax(global_env[s_expr.name]);
     }
 
-    function compile_syntax(name, s_expr) {
-      return global_env[name].compile(s_expr);
+    function compile_syntax(s_expr) {
+      return global_env[s_expr.head.name].compile(s_expr.tail);
     }
 
     function compile_call(s_expr) {
@@ -261,9 +252,8 @@ var COFY = (function (nil) {
     function compile_do(s_expr) {
       var seq = map(compile, s_expr);
       return function (env) {
-        var res;
         for (var rest = seq; isCons(rest); rest = rest.tail)
-          res = evaluate(rest.head, env);
+          var res = evaluate(rest.head, env);
         return res;
       };
     }
@@ -318,33 +308,17 @@ var COFY = (function (nil) {
       return product;
     }
 
-    function goes_up() {
-      for (var i = 1; i < arguments.length; i++)
-        if (arguments[i - 1] >= arguments[i])
-          return false;
-      return arguments.length > 1;
-    }
-
-    function goes_down() {
-      for (var i = 1; i < arguments.length; i++)
-        if (arguments[i - 1] <= arguments[i])
-          return false;
-      return arguments.length > 1;
-    }
-
-    function does_not_go_up() {
-      for (var i = 1; i < arguments.length; i++)
-        if (arguments[i - 1] < arguments[i])
+    function check_array_pairs(array, test_adjacent) {
+      for (var i = 1; i < array.length; i++)
+        if (!test_adjacent(array[i - 1], array[i]))
           return false;
       return true;
     }
 
-    function does_not_go_down() {
-      for (var i = 1; i < arguments.length; i++)
-        if (arguments[i - 1] > arguments[i])
-          return false;
-      return true;
-    }
+    var lower_than = function (a, b) { return a < b; };
+    var greater_than = function (a, b) { return a > b; };
+    var lower_than_or_equal = function (a, b) { return a <= b; };
+    var greater_than_or_equal = function (a, b) { return a >= b; };
 
     function create_global_env() {
       var bindings = {
@@ -360,11 +334,11 @@ var COFY = (function (nil) {
         '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
         '*': function (a, b) { return product.apply(null, arguments); },
         '/': function (a, b) { return a / b; },
-        '<': function () { return goes_up.apply(null, arguments); },
-        '>': function () { return goes_down.apply(null, arguments); },
-        '<=': function () { return does_not_go_down.apply(null, arguments); },
-        '>=': function () { return does_not_go_up.apply(null, arguments); },
-        '=': function (a, b) { return a === b || equal(a, b); },
+        '<': function () { return check_array_pairs(arguments, lower_than); },
+        '>': function () { return check_array_pairs(arguments, greater_than); },
+        '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
+        '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
+        '=': function (a, b) { return equal(a, b); },
         'identical?': function (a, b) { return a === b; },
         'remainder': function (a, b) { return a % b; },
         'not': function (x) { return !x; },
@@ -376,9 +350,8 @@ var COFY = (function (nil) {
         'nil?': function (x) { return x === nil; }
       };
       var math_names = [
-        'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil',
-        'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2',
-        'sqrt', 'pow', 'exp', 'log', 'PI', 'E'
+        'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
+        'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
       ];
       for (var i = 0; i < math_names.length; i++)
         bindings[math_names[i]] = Math[math_names[i]];
@@ -399,24 +372,12 @@ var COFY = (function (nil) {
   return {
     read: parse,
     compile: compile,
-    eval: function (s_expr) {
-      return compile(s_expr)();
-    },
-    clean_eval: function (s_expr) {
-      return compile(s_expr)(true);
-    },
-    read_eval: function (s) {
-      return compile(parse(s))();
-    },
-    clean_read_eval: function (s) {
-      return compile(parse(s))(true);
-    },
+    eval: function (s_expr) { return compile(s_expr)(); },
+    clean_eval: function (s_expr) { return compile(s_expr)(true); },
+    read_eval: function (s) { return compile(parse(s))(); },
+    clean_read_eval: function (s) { return compile(parse(s))(true); },
     print: print,
-    read_eval_print: function (s) {
-      return print(compile(parse(s))());
-    },
-    clean_read_eval_print: function (s) {
-      return print(compile(parse(s))(true));
-    }
+    read_eval_print: function (s) { return print(compile(parse(s))()); },
+    clean_read_eval_print: function (s) { return print(compile(parse(s))(true)); }
   };
 }());
