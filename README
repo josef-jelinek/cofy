@@ -6,6 +6,7 @@ to do (random order):
   - full javascript interop (or reasonably limited for security)
   - running scripts from application/x-cofy script tags
   - language library (in cofy itself)
+  - modules (passing external bindings)
 
   - persistent data structures
   - lazy sequences (maybe just library)
