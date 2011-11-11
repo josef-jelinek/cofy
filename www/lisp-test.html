@@ -94,16 +94,29 @@
           this.isSame(COFY.read_eval('(floor 1.6)'), 1);
           this.isSame(COFY.read_eval('(ceil 1.4)'), 2);
           this.isTrue(COFY.read_eval('(< 1 2 3)'));
-          this.isFalse(COFY.read_eval('(< 1)'));
+          this.isTrue(COFY.read_eval('(< 1)'));
+          this.isTrue(COFY.read_eval('(<)'));
           this.isFalse(COFY.read_eval('(< 1 2 2)'));
           this.isFalse(COFY.read_eval('(< 1 2 1)'));
           this.isTrue(COFY.read_eval('(<= 1)'));
+          this.isTrue(COFY.read_eval('(<=)'));
           this.isTrue(COFY.read_eval('(<= 1 2 3)'));
           this.isTrue(COFY.read_eval('(<= 1 2 2)'));
           this.isFalse(COFY.read_eval('(<= 1 2 1)'));
+          this.isTrue(COFY.read_eval('(> 3 2 1)'));
+          this.isTrue(COFY.read_eval('(> 1)'));
+          this.isTrue(COFY.read_eval('(>)'));
+          this.isFalse(COFY.read_eval('(> 2 2 1)'));
+          this.isFalse(COFY.read_eval('(> 1 2 1)'));
+          this.isTrue(COFY.read_eval('(>= 1)'));
+          this.isTrue(COFY.read_eval('(>=)'));
+          this.isTrue(COFY.read_eval('(>= 3 2 1)'));
+          this.isTrue(COFY.read_eval('(>= 2 2 1)'));
+          this.isFalse(COFY.read_eval('(>= 1 2 1)'));
         },
         definitions: function () {
           this.isUndefined(COFY.read_eval('(def a 1)'));
+          this.isSame(COFY.read_eval('(def aa 1 ab 2) (+ aa ab)'), 3);
           this.throwsError(function () { COFY.read_eval('(def a 2)'); });
           this.throwsError(function () { COFY.read_eval('((fn (a) (def a 2) a) a)'); });
           this.throwsError(function () { COFY.read_eval('((fn () (def a 2 a 3) a))'); });
