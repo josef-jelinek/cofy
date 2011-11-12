@@ -171,8 +171,14 @@
           this.isSame(COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2), 3);
           var f1 = COFY.read_eval('(fn (f) (f 1 2))');
           this.isSame(f1(function (a, b) { return a + b; }), 3);
-          var f2 = COFY.read_eval('(fn (f) (fn (a b) (f a b)))');
-          this.isSame(f2(function (a, b) { return a + b; })(1, 2), 3);
+          var f2 = COFY.read_eval('(fn (f a b) (f a b))');
+          this.isSame(f2(function (a, b) { return a + b; }, 1, 2), 3);
+          var f3 = COFY.read_eval('(fn (f) (fn (a b) (f a b)))');
+          this.isSame(f3(function (a, b) { return a + b; })(1, 2), 3);
+          var f4 = COFY.read_eval('(fn (o) ((. o \'f) (. o "a") (. o "#")))');
+          this.isSame(f4({ f: function (a, b) { return a + b; }, a: 1, '#': 2 }), 3);
+          var f5 = COFY.read_eval('(fn (a) ((. a 0) (. a 1) (. a 2)))');
+          this.isSame(f5([function (a, b) { return a + b; }, 1, 2]), 3);
         }
       },
       print: {
