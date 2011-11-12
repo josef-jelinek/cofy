@@ -26,14 +26,15 @@
       font: 14px monospace;
     }
     #eval {
-      display: block;
-      margin: 10px 0;
-      padding: 2px;
+      display: inline-block;
+      margin: 10px;
+      padding: 0 20px;
       text-align: center;
-      background: #111;
+      background: #231;
       color: #AF3;
       border: 2px outset #CF5;
-      font: bold 16px/1.1 monospace;
+      border-radius: 10px;
+      font: bold 16px/20px monospace;
       text-decoration: none;
     }
     small { color: #48F; }
@@ -41,7 +42,7 @@
   </style>
 </head>
 <body>
-  <div><img src="img/cofy-logo.png"></div>
+  <div><img src="img/cofy-logo.png" width=128 height=55></div>
   <div id="editor"><textarea id="input">(def (inc n) (+ n 1))
 (def (map f x)
      (if (= x ())
