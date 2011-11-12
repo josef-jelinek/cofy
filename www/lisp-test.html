@@ -179,6 +179,14 @@
           this.isSame(f4({ f: function (a, b) { return a + b; }, a: 1, '#': 2 }), 3);
           var f5 = COFY.read_eval('(fn (a) ((. a 0) (. a 1) (. a 2)))');
           this.isSame(f5([function (a, b) { return a + b; }, 1, 2]), 3);
+          var obj1 = { field: 1 };
+          var obj2 = COFY.read_eval('(fn (a) (.set! a "field" 2) a)')(obj1);
+          this.isSame(obj1, obj2);
+          this.isSame(obj1.field, 2);
+          var arr1 = [0, 1];
+          var arr2 = COFY.read_eval('(fn (a) (.set! a 1 2) a)')(arr1);
+          this.isSame(arr1, arr2);
+          this.isSame(arr1[1], 2);
         }
       },
       print: {

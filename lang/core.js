@@ -386,7 +386,8 @@ var COFY = (function (nil) {
         '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
         '=': function (a, b) { return equal(a, b); },
         'identical?': function (a, b) { return a === b; },
-        '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; }
+        '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
+        '.set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; }
       };
       var math_names = [
         'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
