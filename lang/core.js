@@ -8,20 +8,20 @@ var COFY = (function (nil) {
   var sealObject = Object.seal || function (o) {};
   var freezeObject = Object.freeze || function (o) {};
   var freezeObjectProperty = Object.defineProperty  && Object.freeze &&
-    function (obj, prop) {
-      Object.defineProperty(obj, prop, {
+    function (obj, key) {
+      Object.defineProperty(obj, key, {
         writable: false, enumerable: true, configurable: false
       });
     } || function () {};
   var defineFrozenProperty = Object.defineProperty && Object.freeze &&
-    function (obj, prop, value) {
-      Object.defineProperty(obj, prop, {
+    function (obj, key, value) {
+      Object.defineProperty(obj, key, {
         value: value, writable: false, enumerable: true, configurable: false
       });
-    } || function (obj, prop, value) {
-      if (objectHasOwnProperty(env, name))
+    } || function (obj, key, value) {
+      if (objectHasOwnProperty(obj, key))
         error('Redefining ' + name);
-      obj[prop] = value;
+      obj[key] = value;
     };
 
   function objectHasOwnProperty(o, key) {
