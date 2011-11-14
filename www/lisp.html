@@ -6,21 +6,33 @@
   <style>
     html, body { margin: 0; padding: 0; }
     body { font: 12px Arial, sans-serif; background: #111; color: #EEE; padding: 30px 50px; }
-    #editor { position: relative; height: 300px; margin: 15px 0 0 0; }
+    #editor {
+      height: 300px;
+      margin: 15px 0 0 0;
+      padding: 0 0 0 10px;
+      border-width: 10px 0;
+      border-color: #DDD;
+      border-style: solid;
+      border-radius: 10px;
+      background: #FFF;
+    }
     #input {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      padding: 10px 20px;
+      width: 100%;
+      height: 300px;
+      resize: none;
+      margin: 0;
+      padding: 0;
       border: 0;
-      background: #EEE;
-      color: #333;
+      background: #FFF;
+      color: #000;
       font: 16px monospace;
     }
+    #input:focus { outline: none; }
     #output {
       padding: 10px 20px;
+      border: 10px solid #DDD;
+      border-width: 10px 0;
+      border-radius: 10px;
       background: #EEE;
       color: #555;
       font: 16px monospace;
@@ -38,8 +50,10 @@
       font: italic 20px/22px monospace;
       text-decoration: none;
     }
+    #eval:hover { background: #462; color: #EF8; }
+    #eval:focus { outline: none; }
     small { color: #48F; }
-    i { color: #C00; }
+    em { color: #C00; }
   </style>
 </head>
 <body>
@@ -68,7 +82,7 @@
           out.innerHTML += '<small>' + attempt++ + '</small> ' + html_encode(s) + '<br>';
         },
         error: function (e) {
-          out.innerHTML += '<i>' + e.name + ": " + e.message  + '</i><br>';
+          out.innerHTML += '<em>' + e.name + ": " + e.message  + '</em><br>';
         }
       };
     }());
