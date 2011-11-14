@@ -253,6 +253,8 @@ var COFY = (function (nil) {
       'deref': function (x) { return x.value; },
       'swap!': swap,
       'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
+      '.apply': function (o, f, args) { return o[f].apply(o, list_to_array(args)); },
+      '.call': function (o, f) { return o[f].apply(o, Array.prototype.slice.call(arguments, 2)); },
       '+': function () { return sum.apply(null, arguments); },
       '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
       '*': function (a, b) { return product.apply(null, arguments); },

@@ -188,6 +188,14 @@
           var arr2 = COFY.read_eval('(fn (a) (.set! a 1 2) a)')(arr1);
           this.isSame(arr1, arr2);
           this.isSame(arr1[1], 2);
+        },
+        browser_interop: function () {
+          var cofy = COFY.create({ document: document });
+          this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'Test text');
+          cofy.read_eval('(.set! (.call document "getElementById" "test-text") "innerHTML" "aaa")');
+          this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'aaa');
+          cofy.read_eval('(.set! (.call document "getElementById" "test-text") "innerHTML" "Test text")');
+          this.isSame(cofy.read_eval('(. (.apply document "getElementById" \'("test-text")) "innerHTML")'), 'Test text');
         }
       },
       print: {
@@ -223,6 +231,7 @@
 <body onload="run()">
   <div id="result"></div>
   <div id="log"></div>
+  <div id="test-text" style="display: none">Test text</div>
   <script src="../tools/test.js"></script>
   <script src="../lang/core.js"></script>
   <script>
