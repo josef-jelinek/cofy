@@ -186,8 +186,112 @@ var COFY = (function (nil) {
     return print;
   }());
 
+  function create_global_env(external) {
+
+    function list_to_array(list) {
+      var values = [];
+      for (var rest = list; isCons(rest); rest = rest.tail)
+        values.push(rest.head);
+      return values;
+    }
+
+    function swap(variable, value) {
+      var v = variable.value;
+      variable.value = value;
+      return v;
+    }
+
+    function equal(a, b) {
+      return a === b || isCons(a) && isCons(b) &&
+        equal(a.head, b.head) && equal(a.tail, b.tail);
+    }
+
+    function sum() {
+      var sum = 0;
+      for (var i = 0; i < arguments.length; i++)
+        sum += arguments[i];
+      return sum;
+    }
+
+    function product() {
+      var product = 1;
+      for (var i = 0; i < arguments.length && product !== 0; i++)
+        product *= arguments[i];
+      return product;
+    }
+
+    function check_array_pairs(array, test_adjacent) {
+      for (var i = 1; i < array.length; i++)
+        if (!test_adjacent(array[i - 1], array[i]))
+          return false;
+      return true;
+    }
+
+    var lower_than = function (a, b) { return a < b; };
+    var greater_than = function (a, b) { return a > b; };
+    var lower_than_or_equal = function (a, b) { return a <= b; };
+    var greater_than_or_equal = function (a, b) { return a >= b; };
+    var bindings = {
+      'quote': nil,
+      'fn': nil,
+      'if': nil,
+      'def': nil,
+      'do': nil,
+      'nil': nil,
+      'nil?': function (x) { return x === nil; },
+      'true': true,
+      'false': false,
+      'string?': isString,
+      'fn?': isFunction,
+      'symbol?': isSymbol,
+      'cons': function (a, b) { return Cons(a, b); },
+      'cons?': isCons,
+      'first': function (x) { return x.head; },
+      'rest': function (x) { return x.tail; },
+      'var': Var,
+      'var?': isVar,
+      'deref': function (x) { return x.value; },
+      'swap!': swap,
+      'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
+      '+': function () { return sum.apply(null, arguments); },
+      '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
+      '*': function (a, b) { return product.apply(null, arguments); },
+      '/': function (a, b) { return a / b; },
+      'remainder': function (a, b) { return a % b; },
+      '<': function () { return check_array_pairs(arguments, lower_than); },
+      '>': function () { return check_array_pairs(arguments, greater_than); },
+      '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
+      '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
+      '=': function (a, b) { return equal(a, b); },
+      'identical?': function (a, b) { return a === b; },
+      '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
+      '.set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
+      'array': list_to_array
+    };
+    var math_names = [
+      'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
+      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
+    ];
+    for (var i = 0; i < math_names.length; i++)
+      bindings[math_names[i]] = Math[math_names[i]];
+    if (external)
+      for (var key in external)
+        if (objectHasOwnProperty(external, key))
+          defineFrozenProperty(bindings, key, external[key]);
+    for (var binding in bindings)
+      if (objectHasOwnProperty(bindings, binding))
+        freezeObjectProperty(bindings, binding);
+    return bindings;
+  }
+
   var compile = (function () {
-    var global_env = create_global_env();
+    var syntax_bindings = {
+      'quote': Syntax(function (s_expr) { return s_expr.head; }),
+      'fn': Syntax(compile_fn),
+      'if': Syntax(compile_if),
+      'def': Syntax(compile_def),
+      'do': Syntax(compile_do)
+    };
 
     function evaluate(expr, env) {
       return isFunction(expr) ? expr(env) : expr;
@@ -214,11 +318,11 @@ var COFY = (function (nil) {
     }
 
     function has_syntax_defined(s_expr) {
-      return isSymbol(s_expr) && isSyntax(global_env[s_expr.name]);
+      return isSymbol(s_expr) && isSyntax(syntax_bindings[s_expr.name]);
     }
 
     function compile_syntax(s_expr) {
-      return global_env[s_expr.head.name].compile(s_expr.tail);
+      return syntax_bindings[s_expr.head.name].compile(s_expr.tail);
     }
 
     function compile_call(s_expr) {
@@ -308,116 +412,28 @@ var COFY = (function (nil) {
       return !list ? list : Cons(f(list.head), map(f, list.tail));
     }
 
-    function list_to_array(list) {
-      var values = [];
-      for (var rest = list; isCons(rest); rest = rest.tail)
-        values.push(rest.head);
-      return values;
-    }
-
-    function swap(variable, value) {
-      var v = variable.value;
-      variable.value = value;
-      return v;
-    }
-
-    function equal(a, b) {
-      return a === b || isCons(a) && isCons(b) &&
-        equal(a.head, b.head) && equal(a.tail, b.tail);
-    }
-
-    function sum() {
-      var sum = 0;
-      for (var i = 0; i < arguments.length; i++)
-        sum += arguments[i];
-      return sum;
-    }
-
-    function product() {
-      var product = 1;
-      for (var i = 0; i < arguments.length && product !== 0; i++)
-        product *= arguments[i];
-      return product;
-    }
-
-    function check_array_pairs(array, test_adjacent) {
-      for (var i = 1; i < array.length; i++)
-        if (!test_adjacent(array[i - 1], array[i]))
-          return false;
-      return true;
-    }
-
-    var lower_than = function (a, b) { return a < b; };
-    var greater_than = function (a, b) { return a > b; };
-    var lower_than_or_equal = function (a, b) { return a <= b; };
-    var greater_than_or_equal = function (a, b) { return a >= b; };
-
-    function create_global_env() {
-      var bindings = {
-        'quote': Syntax(function (s_expr) { return s_expr.head; }),
-        'fn': Syntax(compile_fn),
-        'if': Syntax(compile_if),
-        'def': Syntax(compile_def),
-        'do': Syntax(compile_do),
-        'nil': nil,
-        'nil?': function (x) { return x === nil; },
-        'true': true,
-        'false': false,
-        'string?': isString,
-        'fn?': isFunction,
-        'symbol?': isSymbol,
-        'cons': function (a, b) { return Cons(a, b); },
-        'cons?': isCons,
-        'first': function (x) { return x.head; },
-        'rest': function (x) { return x.tail; },
-        'var': Var,
-        'var?': isVar,
-        'deref': function (x) { return x.value; },
-        'swap!': swap,
-        'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
-        '+': function () { return sum.apply(null, arguments); },
-        '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
-        '*': function (a, b) { return product.apply(null, arguments); },
-        '/': function (a, b) { return a / b; },
-        'remainder': function (a, b) { return a % b; },
-        '<': function () { return check_array_pairs(arguments, lower_than); },
-        '>': function () { return check_array_pairs(arguments, greater_than); },
-        '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
-        '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
-        '=': function (a, b) { return equal(a, b); },
-        'identical?': function (a, b) { return a === b; },
-        '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
-        '.set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; }
-      };
-      var math_names = [
-        'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
-        'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
-      ];
-      for (var i = 0; i < math_names.length; i++)
-        bindings[math_names[i]] = Math[math_names[i]];
-      for (var binding in bindings)
-        if (objectHasOwnProperty(bindings, binding))
-          freezeObjectProperty(bindings, binding);
-      return bindings;
-    }
-
     return function (s_expr) {
       var expr = compile_do(s_expr);
-      return function (clean) {
-        return evaluate(expr, clean ? create_global_env() : global_env);
+      return function (env) {
+        return evaluate(expr, env || create_global_env());
       };
     };
   }());
 
   return {
     read: parse,
+    print: print,
     compile: compile,
     eval: function (s_expr) { return compile(s_expr)(); },
-    clean_eval: function (s_expr) { return compile(s_expr)(true); },
     read_eval: function (s) { return compile(parse(s))(); },
-    clean_read_eval: function (s) { return compile(parse(s))(true); },
-    print: print,
     read_eval_print: function (s) { return print(compile(parse(s))()); },
-    clean_read_eval_print: function (s) { return print(compile(parse(s))(true)); }
+    create: function (bindings) {
+      var env = create_global_env(bindings);
+      return {
+        eval: function (s_expr) { return compile(s_expr)(env); },
+        read_eval: function (s) { return compile(parse(s))(env); },
+        read_eval_print: function (s) { return print(compile(parse(s))(env)); },
+      }
+    }
   };
 }());

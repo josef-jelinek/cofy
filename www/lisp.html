@@ -74,7 +74,7 @@
 
     function read_eval_print(s) {
       try {
-        OUT.display(COFY.clean_read_eval_print(s));
+        OUT.display(COFY.read_eval_print(s));
       } catch (e) {
         OUT.error(e);
       }

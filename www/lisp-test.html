@@ -115,18 +115,19 @@
           this.isFalse(COFY.read_eval('(>= 1 2 1)'));
         },
         definitions: function () {
-          this.isUndefined(COFY.read_eval('(def a 1)'));
-          this.isSame(COFY.read_eval('(def aa 1 ab 2) (+ aa ab)'), 3);
-          this.throwsError(function () { COFY.read_eval('(def a 2)'); });
-          this.throwsError(function () { COFY.read_eval('((fn (a) (def a 2) a) a)'); });
-          this.throwsError(function () { COFY.read_eval('((fn () (def a 2 a 3) a))'); });
-          this.isSame(COFY.clean_read_eval('(def a 2) a'), 2);
-          this.isSame(COFY.read_eval('((fn (a) a) a)'), 1);
-          this.isSame(COFY.read_eval('((fn () (def a 2) a))'), 2);
-          this.isSame(COFY.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
-          this.isSame(COFY.read_eval('((fn () (def a 1 b 2) (+ a b)))'), 3);
-          this.isSame(COFY.read_eval('a'), 1);
-          this.isSame(COFY.read_eval('(def (af x) (+ x 10)) (af 1)'), 11);
+          var cofy = COFY.create();
+          this.isUndefined(cofy.read_eval('(def a 1)'));
+          this.isSame(cofy.read_eval('(def aa 1 ab 2) (+ aa ab)'), 3);
+          this.throwsError(function () { cofy.read_eval('(def a 2)'); });
+          this.throwsError(function () { cofy.read_eval('((fn (a) (def a 2) a) a)'); });
+          this.throwsError(function () { cofy.read_eval('((fn () (def a 2 a 3) a))'); });
+          this.isSame(COFY.read_eval('(def a 2) a'), 2);
+          this.isSame(cofy.read_eval('((fn (a) a) a)'), 1);
+          this.isSame(cofy.read_eval('((fn () (def a 2) a))'), 2);
+          this.isSame(cofy.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
+          this.isSame(cofy.read_eval('((fn () (def a 1 b 2) (+ a b)))'), 3);
+          this.isSame(cofy.read_eval('a'), 1);
+          this.isSame(cofy.read_eval('(def (af x) (+ x 10)) (af 1)'), 11);
         },
         special_forms: function () {
           this.throwsError(function () { COFY.read_eval('(def if 1) if'); });
