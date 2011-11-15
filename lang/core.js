@@ -186,7 +186,7 @@ var COFY = (function (nil) {
     return print;
   }());
 
-  function create_global_env(external) {
+  var create_global_env = (function () {
 
     function list_to_array(list) {
       var values = [];
@@ -231,12 +231,12 @@ var COFY = (function (nil) {
     var greater_than = function (a, b) { return a > b; };
     var lower_than_or_equal = function (a, b) { return a <= b; };
     var greater_than_or_equal = function (a, b) { return a >= b; };
-    var bindings = {
-      'quote': nil,
-      'fn': nil,
-      'if': nil,
-      'def': nil,
-      'do': nil,
+    var primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do' ];
+    var math_names = [
+      'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
+      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
+    ];
+    var builtins = {
       'nil': nil,
       'nil?': function (x) { return x === nil; },
       'true': true,
@@ -270,21 +270,24 @@ var COFY = (function (nil) {
       '.set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
       'array': list_to_array
     };
-    var math_names = [
-      'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
-    ];
+    for (var i = 0; i < primitive_form_names.length; i++)
+      builtins[primitive_form_names[i]] = nil;
     for (var i = 0; i < math_names.length; i++)
-      bindings[math_names[i]] = Math[math_names[i]];
-    if (external)
-      for (var key in external)
-        if (objectHasOwnProperty(external, key))
-          defineFrozenProperty(bindings, key, external[key]);
-    for (var binding in bindings)
-      if (objectHasOwnProperty(bindings, binding))
-        freezeObjectProperty(bindings, binding);
-    return bindings;
-  }
+      builtins[math_names[i]] = Math[math_names[i]];
+    freezeObject(builtins);
+
+    return function (external) {
+      var env = {};
+      for (var key in builtins)
+        if (objectHasOwnProperty(builtins, key))
+          defineFrozenProperty(env, key, builtins[key]);
+      if (external)
+        for (var key in external)
+          if (objectHasOwnProperty(external, key))
+            defineFrozenProperty(env, key, external[key]);
+      return env;
+    };
+  }());
 
   var compile = (function () {
     var syntax_bindings = {
