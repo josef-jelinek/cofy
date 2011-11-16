@@ -196,6 +196,9 @@
           this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'aaa');
           cofy.read_eval('(.set! (.call document "getElementById" "test-text") "innerHTML" "Test text")');
           this.isSame(cofy.read_eval('(. (.apply document "getElementById" \'("test-text")) "innerHTML")'), 'Test text');
+        },
+        macros: function () {
+          var cofy = COFY.create();
         }
       },
       print: {
