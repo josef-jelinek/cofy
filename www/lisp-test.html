@@ -10,252 +10,259 @@
     #log { padding: 10px; font-family: monospace; }
   </style>
   <script>
-    var tests = {
-      read: {
-        constants: function () {
-          this.isSame(COFY.read('0').head, 0);
-          this.isSame(COFY.read('"hello"').head, 'hello');
-          this.isSame(COFY.read('"he\\\\\\"llo"').head, 'he\\"llo');
-          this.isSame(COFY.read('hello').head.name, 'hello');
+    var tests = (function () {
+      'use strict';
+      return {
+        read: {
+          constants: function () {
+            this.isSame(COFY.read('0').head, 0);
+            this.isSame(COFY.read('"hello"').head, 'hello');
+            this.isSame(COFY.read('"he\\\\\\"llo"').head, 'he\\"llo');
+            this.isSame(COFY.read('hello').head.name, 'hello');
+            this.isSame(COFY.read('a/b').head.parts[0], 'a');
+            this.isSame(COFY.read('a/b').head.parts[1], 'b');
+            this.isSame(COFY.read('a/b/c').head.parts[2], 'c');
+            this.isSame(COFY.read('a/1').head.parts[1], 1);
+            this.isSame(COFY.read('/').head.name, '/');
+            this.isSame(COFY.read('/a').head.name, '/a');
+            this.isSame(COFY.read('a/').head.name, 'a/');
+            this.isSame(COFY.read('a//b').head.name, 'a//b');
+          },
+          lists: function () {
+            this.isSame(COFY.read('()').head, null);
+            this.isSame(COFY.read("'()").head.head.name, 'quote');
+            this.isSame(COFY.read("'()").head.tail.head, null);
+            this.isSame(COFY.read("'()").head.tail.tail, null);
+            this.isSame(COFY.read('(1)').head.head, 1);
+            this.isSame(COFY.read('(1)').head.tail, null);
+            this.isSame(COFY.read('((1) 2)').head.head.head, 1);
+            this.isSame(COFY.read('((1) 2)').head.tail.head, 2);
+            this.isSame(COFY.read('((1) 2)').head.tail.tail, null);
+            this.isSame(COFY.read('(1 : 2)').head.head, 1);
+            this.isSame(COFY.read('(1 : 2)').head.tail, 2);
+            this.isSame(COFY.read('(1 2 : 3)').head.tail.head, 2);
+            this.isSame(COFY.read('(1 2 : 3)').head.tail.tail, 3);
+          },
+          multiple: function () {
+            this.isSame(COFY.read('0 1').head, 0);
+            this.isSame(COFY.read('0 1').tail.head, 1);
+            this.isSame(COFY.read('0 1').tail.tail, null);
+          }
         },
-        paths: function () {
-          this.isSame(COFY.read('a/b').head.parts[0], 'a');
-          this.isSame(COFY.read('a/b').head.parts[1], 'b');
-          this.isSame(COFY.read('a/b/c').head.parts[2], 'c');
-          this.isSame(COFY.read('a/1').head.parts[1], 1);
-          this.throwsError(function () { COFY.read('/a'); });
-          this.throwsError(function () { COFY.read('a/'); });
-          this.throwsError(function () { COFY.read('a//b'); });
+        eval: {
+          constants: function () {
+            this.isSame(COFY.read_eval('0'), 0);
+            this.isSame(COFY.read_eval('"hello"'), 'hello');
+            this.isSame(COFY.read_eval("'hello").name, 'hello');
+            this.isSame(COFY.read_eval("'hello/world").parts[0], 'hello');
+            this.isSame(COFY.read_eval("'hello/world").parts[1], 'world');
+            this.isNull(COFY.read_eval('()'));
+            this.isNull(COFY.read_eval("'()"));
+            this.isSame(COFY.read_eval("'(1)").head, 1);
+            this.isNull(COFY.read_eval("'(1)").tail);
+            this.isSame(COFY.read_eval("'((1))").head.head, 1);
+            this.isSame(COFY.read_eval('0 1'), 1);
+            this.isTrue(COFY.read_eval('true'));
+            this.isFalse(COFY.read_eval('false'));
+            this.isUndefined(COFY.read_eval('nil'));
+            this.isSame(COFY.read_eval("'hello"), COFY.read_eval("'hello"));
+          },
+          identity: function () {
+            this.isTrue(COFY.read_eval('(identical? 0 0)'));
+            this.isFalse(COFY.read_eval('(identical? 0 1)'));
+            this.isTrue(COFY.read_eval('(identical? "a" "a")'));
+            this.isFalse(COFY.read_eval('(identical? "a" "b")'));
+            this.isTrue(COFY.read_eval('(identical? "a" \'"a")'));
+            this.isTrue(COFY.read_eval("(identical? 'a 'a)"));
+            this.isFalse(COFY.read_eval("(identical? 'a 'b)"));
+            this.isTrue(COFY.read_eval("(identical? 'a/b 'a/b)"));
+            this.isTrue(COFY.read_eval("(identical? () '())"));
+          },
+          equality: function () {
+            this.isTrue(COFY.read_eval('(= 0 0)'));
+            this.isFalse(COFY.read_eval('(= 0 1)'));
+            this.isTrue(COFY.read_eval('(= "a" "a")'));
+            this.isTrue(COFY.read_eval('(= "a" \'"a")'));
+            this.isFalse(COFY.read_eval('(= "a" "b")'));
+            this.isTrue(COFY.read_eval("(= 'a 'a)"));
+            this.isFalse(COFY.read_eval("(= 'a 'b)"));
+            this.isTrue(COFY.read_eval("(= 'a/b 'a/b)"));
+            this.isTrue(COFY.read_eval("(= () '())"));
+            this.isTrue(COFY.read_eval("(= '(()) '(()))"));
+            this.isFalse(COFY.read_eval("(= '(0 a) '(0 b))"));
+            this.isTrue(COFY.read_eval("(= '(0 (a)) '(0 (a)))"));
+          },
+          math: function () {
+            this.isSame(COFY.read_eval('(+)'), 0);
+            this.isSame(COFY.read_eval('(+ 1 2 3 4)'), 10);
+            this.isSame(COFY.read_eval('(- 1 2)'), -1);
+            this.isSame(COFY.read_eval('(*)'), 1);
+            this.isSame(COFY.read_eval('(* 1 2 3 4)'), 24);
+            this.isSame(COFY.read_eval('(/ 6 3)'), 2);
+            this.isSame(COFY.read_eval('(/ 5 2)'), 2.5);
+            this.isSame(COFY.read_eval('PI'), Math.PI);
+            this.isSame(COFY.read_eval('(abs 1)'), 1);
+            this.isSame(COFY.read_eval('(abs -1)'), 1);
+            this.isSame(COFY.read_eval('(min 2 1 3)'), 1);
+            this.isSame(COFY.read_eval('(max 2 1 3)'), 3);
+            this.isSame(COFY.read_eval('random'), Math.random);
+            this.isSame(COFY.read_eval('(round 1.6)'), 2);
+            this.isSame(COFY.read_eval('(floor 1.6)'), 1);
+            this.isSame(COFY.read_eval('(ceil 1.4)'), 2);
+            this.isTrue(COFY.read_eval('(< 1 2 3)'));
+            this.isTrue(COFY.read_eval('(< 1)'));
+            this.isTrue(COFY.read_eval('(<)'));
+            this.isFalse(COFY.read_eval('(< 1 2 2)'));
+            this.isFalse(COFY.read_eval('(< 1 2 1)'));
+            this.isTrue(COFY.read_eval('(<= 1)'));
+            this.isTrue(COFY.read_eval('(<=)'));
+            this.isTrue(COFY.read_eval('(<= 1 2 3)'));
+            this.isTrue(COFY.read_eval('(<= 1 2 2)'));
+            this.isFalse(COFY.read_eval('(<= 1 2 1)'));
+            this.isTrue(COFY.read_eval('(> 3 2 1)'));
+            this.isTrue(COFY.read_eval('(> 1)'));
+            this.isTrue(COFY.read_eval('(>)'));
+            this.isFalse(COFY.read_eval('(> 2 2 1)'));
+            this.isFalse(COFY.read_eval('(> 1 2 1)'));
+            this.isTrue(COFY.read_eval('(>= 1)'));
+            this.isTrue(COFY.read_eval('(>=)'));
+            this.isTrue(COFY.read_eval('(>= 3 2 1)'));
+            this.isTrue(COFY.read_eval('(>= 2 2 1)'));
+            this.isFalse(COFY.read_eval('(>= 1 2 1)'));
+          },
+          definitions: function () {
+            var cofy = COFY.create();
+            this.isUndefined(cofy.read_eval('(def a 1)'));
+            this.isSame(cofy.read_eval('(def aa 1 ab 2) (+ aa ab)'), 3);
+            this.throwsError(function () { cofy.read_eval('(def a 2)'); });
+            this.throwsError(function () { cofy.read_eval('((fn (a) (def a 2) a) a)'); });
+            this.throwsError(function () { cofy.read_eval('((fn () (def a 2 a 3) a))'); });
+            this.isSame(COFY.read_eval('(def a 2) a'), 2);
+            this.isSame(cofy.read_eval('((fn (a) a) a)'), 1);
+            this.isSame(cofy.read_eval('((fn () (def a 2) a))'), 2);
+            this.isSame(cofy.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
+            this.isSame(cofy.read_eval('((fn () (def a 1 b 2) (+ a b)))'), 3);
+            this.isSame(cofy.read_eval('a'), 1);
+            this.isSame(cofy.read_eval('(def (af x) (+ x 10)) (af 1)'), 11);
+          },
+          special_forms: function () {
+            this.throwsError(function () { COFY.read_eval('(def if 1) if'); });
+            this.isSame(COFY.read_eval('((fn () (def if 1) if))'), 1);
+          },
+          args: function () {
+            this.isUndefined(COFY.read_eval('((fn (arg) arg))'));
+            this.isSame(COFY.read_eval('((fn (arg) arg) 1)'), 1);
+            this.isSame(COFY.read_eval('((fn (arg) arg) 1 2)'), 1);
+            this.isUndefined(COFY.read_eval('(((fn (arg) (fn (arg) arg)) 1))'));
+            this.isSame(COFY.read_eval('(((fn (arg) (fn (arg) arg))) 1)'), 1);
+            this.isUndefined(COFY.read_eval('((fn (arg) ((fn (arg) arg))) 1)'));
+          },
+          varargs: function () {
+            this.isNull(COFY.read_eval('((fn arglist arglist))'));
+            this.isTrue(COFY.read_eval("(= ((fn arglist arglist) 1) '(1))"));
+            this.isTrue(COFY.read_eval("(= ((fn arglist arglist) 1 2) '(1 2))"));
+            this.isSame(COFY.read_eval('((fn (arg : rest) arg) 1)'), 1);
+            this.isNull(COFY.read_eval('((fn (arg : rest) rest) 1)'));
+            this.isSame(COFY.read_eval('((fn (arg1 arg2 : rest) arg1) 1)'), 1);
+            this.isUndefined(COFY.read_eval('((fn (arg1 arg2 : rest) arg2) 1)'));
+            this.isNull(COFY.read_eval('((fn (arg1 arg2 : rest) rest) 1)'));
+            this.isTrue(COFY.read_eval("(= ((fn (arg : rest) rest) 1 2 3) '(2 3))"));
+          },
+          mutability: function () {
+            this.isFalse(COFY.read_eval('(= (var 1) (var 1))'));
+            this.isFalse(COFY.read_eval('(= (cons (var 1) 2) (cons (var 1) 2))'));
+            this.isSame(COFY.read_eval('(deref (var 1))'), 1);
+            this.isSame(COFY.read_eval('(swap! (var 1) 2)'), 1);
+            this.isTrue(COFY.read_eval("(= ((fn (a) (def b (swap! a 2)) (cons (deref a) b)) (var 1)) '(2 : 1))"));
+          },
+          apply: function () {
+            this.isTrue(COFY.read_eval("(= (apply (fn (arg : rest) rest) '(1 2 3)) '(2 3))"));
+            this.isTrue(COFY.read_eval("(= (apply (fn args args) '(1 2 3)) '(1 2 3))"));
+            this.isTrue(COFY.read_eval("(= (apply (fn args args) '(1 2 : 3)) '(1 2))"));
+            this.isNull(COFY.read_eval('(apply (fn args args) ())'));
+            this.isNull(COFY.read_eval('(apply (fn args args))'));
+            this.throwsError(function () { COFY.read_eval('(apply)'); });
+          },
+          function_interop: function () {
+            this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);
+            this.isSame(COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2), 3);
+            this.isSame(COFY.read_eval('(fn (f) (f 1 2))')(function (a, b) { return a + b; }), 3);
+            this.isSame(COFY.read_eval('(fn (f a b) (f a b))')(function (a, b) { return a + b; }, 1, 2), 3);
+            this.isSame(COFY.read_eval('(fn (f) (fn (a b) (f a b)))')(function (a, b) { return a + b; })(1, 2), 3);
+          },
+          object_interop: function () {
+            this.isSame(COFY.read_eval('(fn (o) ((. o \'f) (. o "a")))')({ f: function (a) { return a + 1; }, a: 1 }), 2);
+            this.isSame(COFY.read_eval('(fn (o) o/a/b)')({ a: { b: 1 } }), 1);
+            this.isSame(COFY.read_eval('(fn (o) (o/f o/a))')({ f: function (a) { return a + 1; }, a: 1 }), 2);
+          },
+          array_interop: function () {
+            this.isSame(COFY.read_eval('(fn (a) ((. a 0) (. a 1)))')([function (a) { return a + 1; }, 1]), 2);
+            this.isSame(COFY.read_eval('(fn (o) o/1/b)')([ 0, { b: 1 } ]), 1);
+            this.isSame(COFY.read_eval('(fn (a) (a/0 a/1))')([function (a) { return a + 1; }, 1]), 2);
+          },
+          capabilities_path_access: function () {
+            this.isSame(COFY.create({ o: { a: { b: 1 } }, c: [2, 'x'] }).read_eval('(+ o/a/b c/0)'), 3);
+          },
+          modify_object_interop: function () {
+            var obj1 = { field: 1 }, obj2 = COFY.read_eval('(fn (a) (set! a "field" 2) a)')(obj1);
+            this.isSame(obj1, obj2);
+            this.isSame(obj1.field, 2);
+          },
+          modify_array_interop: function () {
+            var arr1 = [0, 1], arr2 = COFY.read_eval('(fn (a) (set! a 1 2) a)')(arr1);
+            this.isSame(arr1, arr2);
+            this.isSame(arr1[1], 2);
+          },
+          browser_interop: function () {
+            var cofy = COFY.create({ document: document });
+            this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'Test text');
+            cofy.read_eval('(set! (.call document "getElementById" "test-text") "innerHTML" "aaa")');
+            this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'aaa');
+            cofy.read_eval('(set! (.call document "getElementById" "test-text") "innerHTML" "Test text")');
+            this.isSame(cofy.read_eval('(. (.apply document "getElementById" \'("test-text")) "innerHTML")'), 'Test text');
+          },
+          browser_interop_compact: function () {
+            var cofy = COFY.create({ document: document });
+            this.isSame(cofy.read_eval('(. (document/getElementById "test-text") "innerHTML")'), 'Test text');
+            cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "aaa")');
+            this.isSame(cofy.read_eval('(. (document/getElementById "test-text") "innerHTML")'), 'aaa');
+            cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "Test text")');
+            this.isSame(cofy.read_eval('(. (apply document/getElementById \'("test-text")) "innerHTML")'), 'Test text');
+          },
+          macros: function () {
+            var cofy = COFY.create();
+          }
         },
-        lists: function () {
-          this.isSame(COFY.read('()').head, null);
-          this.isSame(COFY.read("'()").head.head.name, 'quote');
-          this.isSame(COFY.read("'()").head.tail.head, null);
-          this.isSame(COFY.read("'()").head.tail.tail, null);
-          this.isSame(COFY.read('(1)').head.head, 1);
-          this.isSame(COFY.read('(1)').head.tail, null);
-          this.isSame(COFY.read('((1) 2)').head.head.head, 1);
-          this.isSame(COFY.read('((1) 2)').head.tail.head, 2);
-          this.isSame(COFY.read('((1) 2)').head.tail.tail, null);
-          this.isSame(COFY.read('(1 : 2)').head.head, 1);
-          this.isSame(COFY.read('(1 : 2)').head.tail, 2);
-          this.isSame(COFY.read('(1 2 : 3)').head.tail.head, 2);
-          this.isSame(COFY.read('(1 2 : 3)').head.tail.tail, 3);
-        },
-        multiple: function () {
-          this.isSame(COFY.read('0 1').head, 0);
-          this.isSame(COFY.read('0 1').tail.head, 1);
-          this.isSame(COFY.read('0 1').tail.tail, null);
+        print: {
+          constants: function () {
+            this.isSame(COFY.read_eval_print('0'), '0');
+            this.isSame(COFY.read_eval_print('"hello"'), '"hello"');
+            this.isSame(COFY.read_eval_print('"hel\r\\n\\"\\\\lo"'), '"hel\\r\\n\\"\\\\lo"');
+            this.isSame(COFY.read_eval_print("'hello"), 'hello');
+            this.isSame(COFY.read_eval_print("'hello/world"), 'hello/world');
+            this.isSame(COFY.read_eval_print('()'), '()');
+            this.isSame(COFY.read_eval_print("'()"), '()');
+          },
+          jsconstants: function () {
+            this.isSame(COFY.read_eval_print('true'), 'true');
+            this.isSame(COFY.read_eval_print('false'), 'false');
+            this.isSame(COFY.read_eval_print('nil'), 'undefined');
+          },
+          lists: function () {
+            this.isSame(COFY.read_eval_print("'(1)"), '(1)');
+            this.isSame(COFY.read_eval_print("'(1 2)"), '(1 2)');
+            this.isSame(COFY.read_eval_print("'((1))"), '((1))');
+            this.isSame(COFY.read_eval_print('(cons 1 2)'), '(1 : 2)');
+            this.isSame(COFY.read_eval_print("'(1 : 2)"), '(1 : 2)');
+            this.isSame(COFY.read_eval_print('(cons 0 (cons 1 2))'), '(0 1 : 2)');
+            this.isSame(COFY.read_eval_print("'(0 : (1 : 2))"), '(0 1 : 2)');
+            this.isSame(COFY.read_eval_print("'((1 : 2) : 3)"), '((1 : 2) : 3)');
+            this.isSame(COFY.read_eval_print("'(0 : (1 : ()))"), '(0 1)');
+            this.isSame(COFY.read_eval_print("'(0 1 : ())"), '(0 1)');
+          }
         }
-      },
-      eval: {
-        constants: function () {
-          this.isSame(COFY.read_eval('0'), 0);
-          this.isSame(COFY.read_eval('"hello"'), 'hello');
-          this.isSame(COFY.read_eval("'hello").name, 'hello');
-          this.isSame(COFY.read_eval("'hello/world").parts[0], 'hello');
-          this.isSame(COFY.read_eval("'hello/world").parts[1], 'world');
-          this.isNull(COFY.read_eval('()'));
-          this.isNull(COFY.read_eval("'()"));
-          this.isSame(COFY.read_eval("'(1)").head, 1);
-          this.isNull(COFY.read_eval("'(1)").tail);
-          this.isSame(COFY.read_eval("'((1))").head.head, 1);
-          this.isSame(COFY.read_eval('0 1'), 1);
-          this.isTrue(COFY.read_eval('true'));
-          this.isFalse(COFY.read_eval('false'));
-          this.isUndefined(COFY.read_eval('nil'));
-          this.isSame(COFY.read_eval("'hello"), COFY.read_eval("'hello"));
-        },
-        identity: function () {
-          this.isTrue(COFY.read_eval('(identical? 0 0)'));
-          this.isFalse(COFY.read_eval('(identical? 0 1)'));
-          this.isTrue(COFY.read_eval('(identical? "a" "a")'));
-          this.isFalse(COFY.read_eval('(identical? "a" "b")'));
-          this.isTrue(COFY.read_eval('(identical? "a" \'"a")'));
-          this.isTrue(COFY.read_eval("(identical? 'a 'a)"));
-          this.isFalse(COFY.read_eval("(identical? 'a 'b)"));
-          this.isTrue(COFY.read_eval("(identical? () '())"));
-        },
-        equality: function () {
-          this.isTrue(COFY.read_eval('(= 0 0)'));
-          this.isFalse(COFY.read_eval('(= 0 1)'));
-          this.isTrue(COFY.read_eval('(= "a" "a")'));
-          this.isTrue(COFY.read_eval('(= "a" \'"a")'));
-          this.isFalse(COFY.read_eval('(= "a" "b")'));
-          this.isTrue(COFY.read_eval("(= 'a 'a)"));
-          this.isFalse(COFY.read_eval("(= 'a 'b)"));
-          this.isTrue(COFY.read_eval("(= 'a/b 'a/b)"));
-          this.isTrue(COFY.read_eval("(= () '())"));
-          this.isTrue(COFY.read_eval("(= '(()) '(()))"));
-          this.isFalse(COFY.read_eval("(= '(0 a) '(0 b))"));
-          this.isTrue(COFY.read_eval("(= '(0 (a)) '(0 (a)))"));
-        },
-        math: function () {
-          this.isSame(COFY.read_eval('(+)'), 0);
-          this.isSame(COFY.read_eval('(+ 1 2 3 4)'), 10);
-          this.isSame(COFY.read_eval('(- 1 2)'), -1);
-          this.isSame(COFY.read_eval('(*)'), 1);
-          this.isSame(COFY.read_eval('(* 1 2 3 4)'), 24);
-          this.isSame(COFY.read_eval('PI'), Math.PI);
-          this.isSame(COFY.read_eval('(abs 1)'), 1);
-          this.isSame(COFY.read_eval('(abs -1)'), 1);
-          this.isSame(COFY.read_eval('(min 2 1 3)'), 1);
-          this.isSame(COFY.read_eval('(max 2 1 3)'), 3);
-          this.isSame(COFY.read_eval('random'), Math.random);
-          this.isSame(COFY.read_eval('(round 1.6)'), 2);
-          this.isSame(COFY.read_eval('(floor 1.6)'), 1);
-          this.isSame(COFY.read_eval('(ceil 1.4)'), 2);
-          this.isTrue(COFY.read_eval('(< 1 2 3)'));
-          this.isTrue(COFY.read_eval('(< 1)'));
-          this.isTrue(COFY.read_eval('(<)'));
-          this.isFalse(COFY.read_eval('(< 1 2 2)'));
-          this.isFalse(COFY.read_eval('(< 1 2 1)'));
-          this.isTrue(COFY.read_eval('(<= 1)'));
-          this.isTrue(COFY.read_eval('(<=)'));
-          this.isTrue(COFY.read_eval('(<= 1 2 3)'));
-          this.isTrue(COFY.read_eval('(<= 1 2 2)'));
-          this.isFalse(COFY.read_eval('(<= 1 2 1)'));
-          this.isTrue(COFY.read_eval('(> 3 2 1)'));
-          this.isTrue(COFY.read_eval('(> 1)'));
-          this.isTrue(COFY.read_eval('(>)'));
-          this.isFalse(COFY.read_eval('(> 2 2 1)'));
-          this.isFalse(COFY.read_eval('(> 1 2 1)'));
-          this.isTrue(COFY.read_eval('(>= 1)'));
-          this.isTrue(COFY.read_eval('(>=)'));
-          this.isTrue(COFY.read_eval('(>= 3 2 1)'));
-          this.isTrue(COFY.read_eval('(>= 2 2 1)'));
-          this.isFalse(COFY.read_eval('(>= 1 2 1)'));
-        },
-        definitions: function () {
-          var cofy = COFY.create();
-          this.isUndefined(cofy.read_eval('(def a 1)'));
-          this.isSame(cofy.read_eval('(def aa 1 ab 2) (+ aa ab)'), 3);
-          this.throwsError(function () { cofy.read_eval('(def a 2)'); });
-          this.throwsError(function () { cofy.read_eval('((fn (a) (def a 2) a) a)'); });
-          this.throwsError(function () { cofy.read_eval('((fn () (def a 2 a 3) a))'); });
-          this.isSame(COFY.read_eval('(def a 2) a'), 2);
-          this.isSame(cofy.read_eval('((fn (a) a) a)'), 1);
-          this.isSame(cofy.read_eval('((fn () (def a 2) a))'), 2);
-          this.isSame(cofy.read_eval('(((fn () (def a 3) (fn () a))))'), 3);
-          this.isSame(cofy.read_eval('((fn () (def a 1 b 2) (+ a b)))'), 3);
-          this.isSame(cofy.read_eval('a'), 1);
-          this.isSame(cofy.read_eval('(def (af x) (+ x 10)) (af 1)'), 11);
-        },
-        special_forms: function () {
-          this.throwsError(function () { COFY.read_eval('(def if 1) if'); });
-          this.isSame(COFY.read_eval('((fn () (def if 1) if))'), 1);
-        },
-        args: function () {
-          this.isUndefined(COFY.read_eval('((fn (arg) arg))'));
-          this.isSame(COFY.read_eval('((fn (arg) arg) 1)'), 1);
-          this.isSame(COFY.read_eval('((fn (arg) arg) 1 2)'), 1);
-          this.isUndefined(COFY.read_eval('(((fn (arg) (fn (arg) arg)) 1))'));
-          this.isSame(COFY.read_eval('(((fn (arg) (fn (arg) arg))) 1)'), 1);
-          this.isUndefined(COFY.read_eval('((fn (arg) ((fn (arg) arg))) 1)'));
-        },
-        varargs: function () {
-          this.isNull(COFY.read_eval('((fn arglist arglist))'));
-          this.isTrue(COFY.read_eval("(= ((fn arglist arglist) 1) '(1))"));
-          this.isTrue(COFY.read_eval("(= ((fn arglist arglist) 1 2) '(1 2))"));
-          this.isSame(COFY.read_eval('((fn (arg : rest) arg) 1)'), 1);
-          this.isNull(COFY.read_eval('((fn (arg : rest) rest) 1)'));
-          this.isSame(COFY.read_eval('((fn (arg1 arg2 : rest) arg1) 1)'), 1);
-          this.isUndefined(COFY.read_eval('((fn (arg1 arg2 : rest) arg2) 1)'));
-          this.isNull(COFY.read_eval('((fn (arg1 arg2 : rest) rest) 1)'));
-          this.isTrue(COFY.read_eval("(= ((fn (arg : rest) rest) 1 2 3) '(2 3))"));
-        },
-        mutability: function () {
-          this.isFalse(COFY.read_eval('(= (var 1) (var 1))'));
-          this.isFalse(COFY.read_eval('(= (cons (var 1) 2) (cons (var 1) 2))'));
-          this.isSame(COFY.read_eval('(deref (var 1))'), 1);
-          this.isSame(COFY.read_eval('(swap! (var 1) 2)'), 1);
-          this.isTrue(COFY.read_eval("(= ((fn (a) (def b (swap! a 2)) (cons (deref a) b)) (var 1)) '(2 : 1))"));
-        },
-        apply: function () {
-          this.isTrue(COFY.read_eval("(= (apply (fn (arg : rest) rest) '(1 2 3)) '(2 3))"));
-          this.isTrue(COFY.read_eval("(= (apply (fn args args) '(1 2 3)) '(1 2 3))"));
-          this.isTrue(COFY.read_eval("(= (apply (fn args args) '(1 2 : 3)) '(1 2))"));
-          this.isNull(COFY.read_eval('(apply (fn args args) ())'));
-          this.isNull(COFY.read_eval('(apply (fn args args))'));
-          this.throwsError(function () { COFY.read_eval('(apply)'); });
-        },
-        object_array_path: function () {
-          this.isSame(COFY.read_eval('(fn (o) o/a/b)')({ a: { b: 1 } }), 1);
-          this.isSame(COFY.read_eval('(fn (o) o/1/b)')([ 0, { b: 1 } ]), 1);
-          this.isSame(COFY.create({ o: { a: { b: 1 } }, c: [2, 'x'] }).read_eval('(+ o/a/b c/0)'), 3);
-          this.isSame(COFY.read_eval('(fn (o) (o/f o/a))')({ f: function (a) { return a + 1; }, a: 1 }), 2);
-          this.isSame(COFY.read_eval('(fn (a) (a/0 a/1 a/2))')([function (a, b) { return a + b; }, 1, 2]), 3);
-        },
-        interop: function () {
-          this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);
-          this.isSame(COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2), 3);
-          var f1 = COFY.read_eval('(fn (f) (f 1 2))');
-          this.isSame(f1(function (a, b) { return a + b; }), 3);
-          var f2 = COFY.read_eval('(fn (f a b) (f a b))');
-          this.isSame(f2(function (a, b) { return a + b; }, 1, 2), 3);
-          var f3 = COFY.read_eval('(fn (f) (fn (a b) (f a b)))');
-          this.isSame(f3(function (a, b) { return a + b; })(1, 2), 3);
-          var f4 = COFY.read_eval('(fn (o) ((. o \'f) (. o "a") (. o "#")))');
-          this.isSame(f4({ f: function (a, b) { return a + b; }, a: 1, '#': 2 }), 3);
-          var f5 = COFY.read_eval('(fn (a) ((. a 0) (. a 1) (. a 2)))');
-          this.isSame(f5([function (a, b) { return a + b; }, 1, 2]), 3);
-          var obj1 = { field: 1 };
-          var obj2 = COFY.read_eval('(fn (a) (set! a "field" 2) a)')(obj1);
-          this.isSame(obj1, obj2);
-          this.isSame(obj1.field, 2);
-          var arr1 = [0, 1];
-          var arr2 = COFY.read_eval('(fn (a) (set! a 1 2) a)')(arr1);
-          this.isSame(arr1, arr2);
-          this.isSame(arr1[1], 2);
-        },
-        browser_interop: function () {
-          var cofy = COFY.create({ document: document });
-          this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'Test text');
-          cofy.read_eval('(set! (.call document "getElementById" "test-text") "innerHTML" "aaa")');
-          this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'aaa');
-          cofy.read_eval('(set! (.call document "getElementById" "test-text") "innerHTML" "Test text")');
-          this.isSame(cofy.read_eval('(. (.apply document "getElementById" \'("test-text")) "innerHTML")'), 'Test text');
-        },
-        browser_interop_compact: function () {
-          var cofy = COFY.create({ document: document });
-          this.isSame(cofy.read_eval('(. (document/getElementById "test-text") "innerHTML")'), 'Test text');
-          cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "aaa")');
-          this.isSame(cofy.read_eval('(. (document/getElementById "test-text") "innerHTML")'), 'aaa');
-          cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "Test text")');
-          this.isSame(cofy.read_eval('(. (apply document/getElementById \'("test-text")) "innerHTML")'), 'Test text');
-        },
-        macros: function () {
-          var cofy = COFY.create();
-        }
-      },
-      print: {
-        constants: function () {
-          this.isSame(COFY.read_eval_print('0'), '0');
-          this.isSame(COFY.read_eval_print('"hello"'), '"hello"');
-          this.isSame(COFY.read_eval_print('"hel\r\\n\\"\\\\lo"'), '"hel\\r\\n\\"\\\\lo"');
-          this.isSame(COFY.read_eval_print("'hello"), 'hello');
-          this.isSame(COFY.read_eval_print('()'), '()');
-          this.isSame(COFY.read_eval_print("'()"), '()');
-        },
-        jsconstants: function () {
-          this.isSame(COFY.read_eval_print('true'), 'true');
-          this.isSame(COFY.read_eval_print('false'), 'false');
-          this.isSame(COFY.read_eval_print('nil'), 'undefined');
-        },
-        lists: function () {
-          this.isSame(COFY.read_eval_print("'(1)"), '(1)');
-          this.isSame(COFY.read_eval_print("'(1 2)"), '(1 2)');
-          this.isSame(COFY.read_eval_print("'((1))"), '((1))');
-          this.isSame(COFY.read_eval_print('(cons 1 2)'), '(1 : 2)');
-          this.isSame(COFY.read_eval_print("'(1 : 2)"), '(1 : 2)');
-          this.isSame(COFY.read_eval_print('(cons 0 (cons 1 2))'), '(0 1 : 2)');
-          this.isSame(COFY.read_eval_print("'(0 : (1 : 2))"), '(0 1 : 2)');
-          this.isSame(COFY.read_eval_print("'((1 : 2) : 3)"), '((1 : 2) : 3)');
-          this.isSame(COFY.read_eval_print("'(0 : (1 : ()))"), '(0 1)');
-          this.isSame(COFY.read_eval_print("'(0 1 : ())"), '(0 1)');
-        }
-      }
-    };
+      };
+    }());
   </script>
 </head>
 <body onload="run()">
