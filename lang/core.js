@@ -31,14 +31,28 @@ var COFY = (function (nil) {
 
   var symbols = {};
 
-  function Symbol(s) {
-    if (objectHasOwnProperty(symbols, s))
-      return symbols[s];
+  function Symbol(name) {
+    if (objectHasOwnProperty(symbols, name))
+      return symbols[name];
     if (!isSymbol(this))
-      return new Symbol(s);
-    this.name = s;
+      return new Symbol(name);
+    this.name = name;
     freezeObject(this);
-    symbols[s] = this;
+    symbols[name] = this;
+  }
+
+  function Path(names) {
+    var i;
+    if (!isPath(this))
+      return new Path(names);
+    this.parts = Array(names.length);
+    for (i = 0; i < names.length; i++) {
+      if (names[i] === '')
+        throw { name: 'SyntaxError', message: 'Invalid path "' + names.join('/') + '"' };
+      this.parts[i] = isNaN(names[i]) ? names[i] : +names[i];
+    }
+    freezeObject(this.parts);
+    freezeObject(this);
   }
 
   function Cons(head, tail) {
@@ -66,6 +80,7 @@ var COFY = (function (nil) {
   function isString(x) { return typeof x === 'string'; }
   function isFunction(x) { return typeof x === 'function'; }
   function isSymbol(x) { return x instanceof Symbol; }
+  function isPath(x) { return x instanceof Path; }
   function isCons(x) { return x instanceof Cons; }
   function isVar(x) { return x instanceof Var; }
   function isSyntax(x) { return x instanceof Syntax; }
@@ -74,11 +89,14 @@ var COFY = (function (nil) {
     var token_actions, escape_chars, tokens, index;
 
     function read_expr() {
-      var token = read_token();
+      var token = read_token(), names;
       if (objectHasOwnProperty(token_actions, token))
         return token_actions[token]();
       if (token.charAt(0) === '"')
         return get_string(token);
+      names = token.split('/');
+      if (names.length > 1)
+        return Path(names);
       return isNaN(token) ? Symbol(token) : +token;
     }
 
@@ -160,6 +178,8 @@ var COFY = (function (nil) {
         return encode_string(s_expr);
       if (isSymbol(s_expr))
         return s_expr.name;
+      if (isPath(s_expr))
+        return s_expr.parts.join('/');
       if (s_expr === null || isCons(s_expr))
         return print_list(s_expr);
       return '' + s_expr;
@@ -203,7 +223,19 @@ var COFY = (function (nil) {
 
     function equal(a, b) {
       return a === b || isCons(a) && isCons(b) &&
-        equal(a.head, b.head) && equal(a.tail, b.tail);
+        equal(a.head, b.head) && equal(a.tail, b.tail) ||
+        isPath(a) && isPath(b) && arrayEqual(a.parts, b.parts);
+    }
+
+    function arrayEqual(a, b) {
+      if (a === b)
+        return true;
+      if (a.length !== b.length)
+        return false;
+      for (i = 0; i < a.length; i++)
+        if (!equal(a[i], b[i]))
+          return false;
+      return true;
     }
 
     function sum() {
@@ -252,7 +284,7 @@ var COFY = (function (nil) {
       'var?': isVar,
       'deref': function (x) { return x.value; },
       'swap!': swap,
-      'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
+      'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
       '.apply': function (o, f, args) { return o[f].apply(o, list_to_array(args)); },
       '.call': function (o, f) { return o[f].apply(o, Array.prototype.slice.call(arguments, 2)); },
       '+': function () { return sum.apply(null, arguments); },
@@ -267,7 +299,7 @@ var COFY = (function (nil) {
       '=': function (a, b) { return equal(a, b); },
       'identical?': function (a, b) { return a === b; },
       '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
-      '.set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
+      'set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
       'array': list_to_array
     };
     for (var i = 0; i < primitive_form_names.length; i++)
@@ -309,16 +341,34 @@ var COFY = (function (nil) {
     function compile(s_expr) {
       if (isSymbol(s_expr))
         return compile_symbol(s_expr);
+      if (isPath(s_expr))
+        return compile_path(s_expr);
       if (!isCons(s_expr))
         return s_expr;
       return has_syntax_defined(s_expr.head) ? compile_syntax(s_expr) : compile_call(s_expr);
     }
 
-    function compile_symbol(s_expr) {
+    function compile_symbol(symbol) {
       return function (env) {
-        if (!(s_expr.name in env))
-          error('Symbol "' + print(s_expr) + '" not defined');
-        return env[s_expr.name];
+        if (!(symbol.name in env))
+          error('Symbol "' + print(symbol) + '" not defined');
+        return env[symbol.name];
+      };
+    }
+
+    function compile_path(path) {
+      return function (env) {
+        var parts = path.parts, obj, context, i;
+        if (!(parts[0] in env))
+          error('Path "' + print(path) + '" not defined');
+        obj = env[parts[0]];
+        for (i = 1; i < parts.length; i++) {
+          context = obj;
+          obj = obj[parts[i]];
+        }
+        return isFunction(obj) ? function () {
+          return obj.apply(context, arguments);
+        } : obj;
       };
     }
 
@@ -331,14 +381,14 @@ var COFY = (function (nil) {
     }
 
     function compile_call(s_expr) {
-      var expr = map(compile, s_expr);
+      var expr = map(compile, s_expr), o = {};
       return function (env) {
         var fn = evaluate(expr.head, env), values = [];
         if (!isFunction(fn))
           error('Not a function: ' + print(s_expr.head));
         for (var rest = expr.tail; isCons(rest); rest = rest.tail)
           values.push(evaluate(rest.head, env));
-        return fn.apply(null, values);
+        return fn.apply(o, values);
       };
     }
 

@@ -18,6 +18,15 @@
           this.isSame(COFY.read('"he\\\\\\"llo"').head, 'he\\"llo');
           this.isSame(COFY.read('hello').head.name, 'hello');
         },
+        paths: function () {
+          this.isSame(COFY.read('a/b').head.parts[0], 'a');
+          this.isSame(COFY.read('a/b').head.parts[1], 'b');
+          this.isSame(COFY.read('a/b/c').head.parts[2], 'c');
+          this.isSame(COFY.read('a/1').head.parts[1], 1);
+          this.throwsError(function () { COFY.read('/a'); });
+          this.throwsError(function () { COFY.read('a/'); });
+          this.throwsError(function () { COFY.read('a//b'); });
+        },
         lists: function () {
           this.isSame(COFY.read('()').head, null);
           this.isSame(COFY.read("'()").head.head.name, 'quote');
@@ -44,6 +53,8 @@
           this.isSame(COFY.read_eval('0'), 0);
           this.isSame(COFY.read_eval('"hello"'), 'hello');
           this.isSame(COFY.read_eval("'hello").name, 'hello');
+          this.isSame(COFY.read_eval("'hello/world").parts[0], 'hello');
+          this.isSame(COFY.read_eval("'hello/world").parts[1], 'world');
           this.isNull(COFY.read_eval('()'));
           this.isNull(COFY.read_eval("'()"));
           this.isSame(COFY.read_eval("'(1)").head, 1);
@@ -73,6 +84,7 @@
           this.isFalse(COFY.read_eval('(= "a" "b")'));
           this.isTrue(COFY.read_eval("(= 'a 'a)"));
           this.isFalse(COFY.read_eval("(= 'a 'b)"));
+          this.isTrue(COFY.read_eval("(= 'a/b 'a/b)"));
           this.isTrue(COFY.read_eval("(= () '())"));
           this.isTrue(COFY.read_eval("(= '(()) '(()))"));
           this.isFalse(COFY.read_eval("(= '(0 a) '(0 b))"));
@@ -167,6 +179,13 @@
           this.isNull(COFY.read_eval('(apply (fn args args))'));
           this.throwsError(function () { COFY.read_eval('(apply)'); });
         },
+        object_array_path: function () {
+          this.isSame(COFY.read_eval('(fn (o) o/a/b)')({ a: { b: 1 } }), 1);
+          this.isSame(COFY.read_eval('(fn (o) o/1/b)')([ 0, { b: 1 } ]), 1);
+          this.isSame(COFY.create({ o: { a: { b: 1 } }, c: [2, 'x'] }).read_eval('(+ o/a/b c/0)'), 3);
+          this.isSame(COFY.read_eval('(fn (o) (o/f o/a))')({ f: function (a) { return a + 1; }, a: 1 }), 2);
+          this.isSame(COFY.read_eval('(fn (a) (a/0 a/1 a/2))')([function (a, b) { return a + b; }, 1, 2]), 3);
+        },
         interop: function () {
           this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);
           this.isSame(COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2), 3);
@@ -181,21 +200,29 @@
           var f5 = COFY.read_eval('(fn (a) ((. a 0) (. a 1) (. a 2)))');
           this.isSame(f5([function (a, b) { return a + b; }, 1, 2]), 3);
           var obj1 = { field: 1 };
-          var obj2 = COFY.read_eval('(fn (a) (.set! a "field" 2) a)')(obj1);
+          var obj2 = COFY.read_eval('(fn (a) (set! a "field" 2) a)')(obj1);
           this.isSame(obj1, obj2);
           this.isSame(obj1.field, 2);
           var arr1 = [0, 1];
-          var arr2 = COFY.read_eval('(fn (a) (.set! a 1 2) a)')(arr1);
+          var arr2 = COFY.read_eval('(fn (a) (set! a 1 2) a)')(arr1);
           this.isSame(arr1, arr2);
           this.isSame(arr1[1], 2);
         },
         browser_interop: function () {
           var cofy = COFY.create({ document: document });
           this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'Test text');
-          cofy.read_eval('(.set! (.call document "getElementById" "test-text") "innerHTML" "aaa")');
+          cofy.read_eval('(set! (.call document "getElementById" "test-text") "innerHTML" "aaa")');
           this.isSame(cofy.read_eval('(. (.call document "getElementById" "test-text") "innerHTML")'), 'aaa');
-          cofy.read_eval('(.set! (.call document "getElementById" "test-text") "innerHTML" "Test text")');
+          cofy.read_eval('(set! (.call document "getElementById" "test-text") "innerHTML" "Test text")');
           this.isSame(cofy.read_eval('(. (.apply document "getElementById" \'("test-text")) "innerHTML")'), 'Test text');
+        },
+        browser_interop_compact: function () {
+          var cofy = COFY.create({ document: document });
+          this.isSame(cofy.read_eval('(. (document/getElementById "test-text") "innerHTML")'), 'Test text');
+          cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "aaa")');
+          this.isSame(cofy.read_eval('(. (document/getElementById "test-text") "innerHTML")'), 'aaa');
+          cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "Test text")');
+          this.isSame(cofy.read_eval('(. (apply document/getElementById \'("test-text")) "innerHTML")'), 'Test text');
         },
         macros: function () {
           var cofy = COFY.create();
