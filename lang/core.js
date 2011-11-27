@@ -44,10 +44,10 @@ var COFY = (function (nil) {
 
   function Symbol(name) {
     var names;
-    if (!isSymbol(this))
-      return new Symbol(name);
     if (objectHasOwnProperty(symbols, name))
       return symbols[name];
+    if (!isSymbol(this))
+      return new Symbol(name);
     if (multipart.test(name)) {
       names = name.split('/');
       this.parts = Array(names.length);
@@ -90,7 +90,7 @@ var COFY = (function (nil) {
   function isSyntax(x) { return x instanceof Syntax; }
 
   var parse = (function () {
-    var token_actions, escape_chars, tokens, index;
+    var token_actions, tokens, index, unescape_chars = { '\\n': '\n', '\\r': '\r', '\\t': '\t' };
 
     function read_expr() {
       var token = read_token();
@@ -102,19 +102,19 @@ var COFY = (function (nil) {
     }
 
     function read_seq() {
+      var expr;
       if (index >= tokens.length)
         return null;
-      var expr = read_expr();
+      expr = read_expr();
       return Cons(expr, read_seq());
     }
 
     function read_list() {
+      var expr;
       if (follows(')'))
         return null;
-      var expr = read_expr();
-      if (follows(':') && match(':'))
-        return Cons(expr, read_expr());
-      return Cons(expr, read_list());
+      expr = read_expr();
+      return Cons(expr, follows(':') && match(':') ? read_expr() : read_list());
     }
 
     function follows(token) {
@@ -134,10 +134,11 @@ var COFY = (function (nil) {
     }
 
     function get_string(s) {
+      var key;
       s = s.replace(/^"|"$/g, '').replace(/\\([\\"'])/g, '$1');
-      for (var key in escape_chars)
-        if (objectHasOwnProperty(escape_chars, key))
-          s = s.replace(key, escape_chars[key]);
+      for (key in unescape_chars)
+        if (objectHasOwnProperty(unescape_chars, key))
+          s = s.replace(key, unescape_chars[key]);
       return s;
     }
 
@@ -145,7 +146,6 @@ var COFY = (function (nil) {
       return s.match(/'|\(|\)|[^\s'()"]+|"([^\\]|\\.)*?"|"/g);
     }
 
-    escape_chars = { '\\n': '\n', '\\r': '\r', '\\t': '\t' };
     token_actions = {
       '"': function () { syntaxError('Unclosed string'); },
       ')': function () { syntaxError('Unexpected ")"'); },
@@ -159,9 +159,10 @@ var COFY = (function (nil) {
       }
     };
     return function (s) {
+      var expr;
       tokens = tokenize(s);
       index = 0;
-      var expr = read_seq();
+      expr = read_seq();
       if (index < tokens.length)
         syntaxError('Trailing characters');
       return expr;
@@ -169,6 +170,7 @@ var COFY = (function (nil) {
   }());
 
   var print = (function () {
+    var escape_chars = { '\n': '\\n', '\r': '\\r', '\t': '\\t' };
 
     function print(s_expr) {
       if (isString(s_expr))
@@ -181,22 +183,21 @@ var COFY = (function (nil) {
     }
 
     function print_list(list) {
-      var strings = [], rest;
+      var strings = [], rest, tail;
       for (rest = list; isCons(rest); rest = rest.tail)
         strings.push(print(rest.head));
-      var tail = rest === null ? '' : ' : ' + print(rest);
+      tail = rest === null ? '' : ' : ' + print(rest);
       return '(' + strings.join(' ') + tail + ')';
     }
 
     function encode_string(s) {
+      var key;
       s = s.replace(/([\\"])/g, '\\$1');
-      for (var key in escape_chars)
+      for (key in escape_chars)
         if (objectHasOwnProperty(escape_chars, key))
           s = s.replace(key, escape_chars[key]);
       return '"' + s + '"';
     }
-
-    var escape_chars = { '\n': '\\n', '\r': '\\r', '\t': '\\t' };
 
     return print;
   }());
@@ -204,8 +205,8 @@ var COFY = (function (nil) {
   var create_global_env = (function () {
 
     function list_to_array(list) {
-      var values = [];
-      for (var rest = list; isCons(rest); rest = rest.tail)
+      var values = [], rest;
+      for (rest = list; isCons(rest); rest = rest.tail)
         values.push(rest.head);
       return values;
     }
@@ -217,41 +218,50 @@ var COFY = (function (nil) {
     }
 
     function equal(a, b) {
-      return a === b || isCons(a) && isCons(b) &&
-        equal(a.head, b.head) && equal(a.tail, b.tail);
+      return a === b || isCons(a) && isCons(b) && equal(a.head, b.head) && equal(a.tail, b.tail);
     }
 
     function sum() {
-      var sum = 0;
-      for (var i = 0; i < arguments.length; i++)
+      var i, sum = 0;
+      for (i = 0; i < arguments.length; i++)
         sum += arguments[i];
       return sum;
     }
 
     function product() {
-      var product = 1;
-      for (var i = 0; i < arguments.length && product !== 0; i++)
+      var i, product = 1;
+      for (i = 0; i < arguments.length && product !== 0; i++)
         product *= arguments[i];
       return product;
     }
 
     function check_array_pairs(array, test_adjacent) {
-      for (var i = 1; i < array.length; i++)
+      var i;
+      for (i = 1; i < array.length; i++)
         if (!test_adjacent(array[i - 1], array[i]))
           return false;
       return true;
+    }
+
+    function complete_builtins(builtins) {
+      var i, primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do' ];
+      var math_names = [
+        'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow',
+        'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2'
+      ];
+      for (i = 0; i < primitive_form_names.length; i++)
+        builtins[primitive_form_names[i]] = nil;
+      for (i = 0; i < math_names.length; i++)
+        builtins[math_names[i]] = Math[math_names[i]];
+      freezeObject(builtins);
+      return builtins;
     }
 
     var lower_than = function (a, b) { return a < b; };
     var greater_than = function (a, b) { return a > b; };
     var lower_than_or_equal = function (a, b) { return a <= b; };
     var greater_than_or_equal = function (a, b) { return a >= b; };
-    var primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do' ];
-    var math_names = [
-      'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow', 'exp', 'log',
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
-    ];
-    var builtins = {
+    var builtins = complete_builtins({
       'nil': nil,
       'nil?': function (x) { return x === nil; },
       'true': true,
@@ -272,7 +282,7 @@ var COFY = (function (nil) {
       '.call': function (o, f) { return o[f].apply(o, Array.prototype.slice.call(arguments, 2)); },
       '+': function () { return sum.apply(null, arguments); },
       '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
-      '*': function (a, b) { return product.apply(null, arguments); },
+      '*': function () { return product.apply(null, arguments); },
       '/': function (a, b) { return a / b; },
       'remainder': function (a, b) { return a % b; },
       '<': function () { return check_array_pairs(arguments, lower_than); },
@@ -283,21 +293,17 @@ var COFY = (function (nil) {
       'identical?': function (a, b) { return a === b; },
       '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
       'set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
-      'array': list_to_array
-    };
-    for (var i = 0; i < primitive_form_names.length; i++)
-      builtins[primitive_form_names[i]] = nil;
-    for (var i = 0; i < math_names.length; i++)
-      builtins[math_names[i]] = Math[math_names[i]];
-    freezeObject(builtins);
+      'array': list_to_array,
+      'math': Math
+    });
 
     return function (external) {
-      var env = {};
-      for (var key in builtins)
+      var key, env = {};
+      for (key in builtins)
         if (objectHasOwnProperty(builtins, key))
           defineFrozenProperty(env, key, builtins[key]);
       if (external)
-        for (var key in external)
+        for (key in external)
           if (objectHasOwnProperty(external, key))
             defineFrozenProperty(env, key, external[key]);
       return env;
@@ -380,18 +386,20 @@ var COFY = (function (nil) {
     function compile_if(s_expr) {
       var cond = compile(s_expr.head),
           t = compile(s_expr.tail.head),
-          f = compile(s_expr.tail.tail.head);
+          f = isCons(s_expr.tail.tail) ? compile(s_expr.tail.tail.head) : nil;
       return function (env) {
         return evaluate(evaluate(cond, env) ? t : f, env);
       };
     }
 
     function compile_def(s_expr) {
+      var pairs;
       if (isCons(s_expr.head))
         return compile_def_fn(s_expr);
-      var pairs = get_def_pairs(s_expr);
+      pairs = get_def_pairs(s_expr);
       return function (env) {
-        for (var rest = pairs; isCons(rest); rest = rest.tail)
+        var rest;
+        for (rest = pairs; isCons(rest); rest = rest.tail)
           define_binding(rest.head.head, rest.head.tail, env);
       };
     }
@@ -406,15 +414,16 @@ var COFY = (function (nil) {
     function compile_do(s_expr) {
       var seq = map(compile, s_expr);
       return function (env) {
-        for (var rest = seq; isCons(rest); rest = rest.tail)
-          var res = evaluate(rest.head, env);
+        var rest, res;
+        for (rest = seq; isCons(rest); rest = rest.tail)
+          res = evaluate(rest.head, env);
         return res;
       };
     }
 
     function bind_args(names, values, parent_env) {
-      var env = createObjectFromPrototype(parent_env), i = 0;
-      for (var rest = names; isCons(rest); rest = rest.tail)
+      var i = 0, rest, env = createObjectFromPrototype(parent_env);
+      for (rest = names; isCons(rest); rest = rest.tail)
         defineFrozenProperty(env, rest.head.name, i < values.length ? values[i++] : nil);
       if (rest)
         defineFrozenProperty(env, rest.name, array_tail_to_list(values, i));
@@ -422,8 +431,8 @@ var COFY = (function (nil) {
     }
 
     function array_tail_to_list(values, from) {
-      var rest = null;
-      for (var i = values.length - 1; i >= from; i--)
+      var i, rest = null;
+      for (i = values.length - 1; i >= from; i--)
         rest = Cons(values[i], rest);
       return rest;
     }
@@ -433,9 +442,10 @@ var COFY = (function (nil) {
     }
 
     function get_def_pairs(s_expr) {
+      var pair;
       if (!s_expr)
         return null;
-      var pair = Cons(s_expr.head.name, compile(s_expr.tail.head));
+      pair = Cons(s_expr.head.name, compile(s_expr.tail.head));
       return Cons(pair, get_def_pairs(s_expr.tail.tail));
     }
 
