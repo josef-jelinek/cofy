@@ -231,6 +231,20 @@
             cofy.read_eval('(set! (document/getElementById "test-text") "innerHTML" "Test text")');
             this.isSame(cofy.read_eval('(. (apply document/getElementById \'("test-text")) "innerHTML")'), 'Test text');
           },
+          module_import_all: function () {
+            var cofy = COFY.create({ lib: { add1: function (a) { return a + 1; } } });
+            this.throwsError(function () { cofy.read_eval('(add1 1)'); });
+            this.isSame(cofy.read_eval('(lib/add1 1)'), 2);
+            cofy.read_eval('(use lib)');
+            this.isSame(cofy.read_eval('(add1 1)'), 2);
+          },
+          module_import_one: function () {
+            var cofy = COFY.create({ lib: { add1: function (a) { return a + 1; } } });
+            this.throwsError(function () { cofy.read_eval('(add1 1)'); });
+            this.isSame(cofy.read_eval('(lib/add1 1)'), 2);
+            cofy.read_eval('(use lib/add1)');
+            this.isSame(cofy.read_eval('(add1 1)'), 2);
+          },
           macros: function () {
             var cofy = COFY.create();
           }

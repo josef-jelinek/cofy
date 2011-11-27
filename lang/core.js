@@ -244,7 +244,7 @@ var COFY = (function (nil) {
     }
 
     function complete_builtins(builtins) {
-      var i, primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do' ];
+      var i, primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do', 'use' ];
       var math_names = [
         'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow',
         'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2'
@@ -316,7 +316,8 @@ var COFY = (function (nil) {
       'fn': Syntax(compile_fn),
       'if': Syntax(compile_if),
       'def': Syntax(compile_def),
-      'do': Syntax(compile_do)
+      'do': Syntax(compile_do),
+      'use': Syntax(compile_use)
     };
 
     function evaluate(expr, env) {
@@ -419,6 +420,41 @@ var COFY = (function (nil) {
           res = evaluate(rest.head, env);
         return res;
       };
+    }
+
+    function compile_use(s_expr) {
+      return function (env) {
+        var rest;
+        for (rest = s_expr; isCons(rest); rest = rest.tail) {
+          if (rest.head.parts) {
+            import_one(rest.head.parts, env);
+          } else {
+            import_all(rest.head.name, env);
+          }
+        }
+      };
+    }
+
+    function import_one(parts, env) {
+      var i, obj = env, name = parts[parts.length - 1];
+      if (objectHasOwnProperty(env, name))
+        runtimeError('Binding "' + name + '" already exists');
+      for (i = 0; i < parts.length; i++)
+        obj = obj[parts[i]];
+      env[name] = obj;
+    }
+
+    function import_all(name, env) {
+      var key, module = env[name];
+      if (!module || typeof module !== 'object')
+        runtimeError('Module "' + name + '" not found');
+      for (key in module) {
+        if (objectHasOwnProperty(module, key)) {
+          if (objectHasOwnProperty(env, key))
+            runtimeError('Binding "' + key + '" already exists');
+          env[key] = module[key];
+        }
+      }
     }
 
     function bind_args(names, values, parent_env) {
