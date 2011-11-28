@@ -11,7 +11,7 @@
       margin: 15px 0 0 0;
       padding: 0 0 0 10px;
       border-width: 10px 0;
-      border-color: #DDD;
+      border-color: #F0F0F0;
       border-style: solid;
       border-radius: 10px;
       background: #FFF;
@@ -30,7 +30,7 @@
     #input:focus { outline: none; }
     #output {
       padding: 10px 20px;
-      border: 10px solid #DDD;
+      border: 10px solid #E0E0E0;
       border-width: 10px 0;
       border-radius: 10px;
       background: #EEE;
@@ -66,9 +66,9 @@
                (map f (rest x)))))
 
 (map inc '(1 2 3))</textarea></div>
-  <a id="eval" href="#" onclick="read_eval_print(document.getElementById('input').value)">Evaluate</a>
+  <a id="eval" href="#" onclick="return read_eval_print(document.getElementById('input').value)">Evaluate</a>
   <div id="output"><b>Output Window</b><br></div>
-  <script src="../lang/core.js"></script>
+  <script src="lang/core.js"></script>
   <script>
     var OUT = (function() {
       var attempt = 1, out = document.getElementById('output');
@@ -93,6 +93,7 @@
       } catch (e) {
         OUT.error(e);
       }
+      return false;
     }
   </script>
 </body>
