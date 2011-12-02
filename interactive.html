@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <title>Cofy Lisp Interpreter in JavaScript</title>
   <style>
+    @font-face {
+      font-family: 'Anonymous Pro';
+      font-style: normal;
+      font-weight: normal;
+      src: url('fonts/anonymouspro.eot') format('eot');
+      src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
+    }
     html, body { margin: 0; padding: 0; }
     body { font: 12px Arial, sans-serif; background: #111; color: #EEE; padding: 30px 50px; }
     #editor {
@@ -25,7 +32,7 @@
       border: 0;
       background: #FFF;
       color: #000;
-      font: 16px monospace;
+      font: 16px 'Anonymous Pro', monospace;
     }
     #input:focus { outline: none; }
     #output {
@@ -35,7 +42,7 @@
       border-radius: 10px;
       background: #EEE;
       color: #555;
-      font: 16px monospace;
+      font: 16px 'Anonymous Pro', monospace;
     }
     #eval {
       display: inline-block;
@@ -47,7 +54,7 @@
       color: #AF3;
       border: 2px outset #CF5;
       border-radius: 13px;
-      font: italic 20px/22px monospace;
+      font: italic 20px/22px 'Anonymous Pro', monospace;
       text-decoration: none;
     }
     #eval:hover { background: #462; color: #EF8; }
