@@ -43,21 +43,23 @@ var COFY = (function (nil) {
   var symbols = {}, multipart = RegExp('^[^/]+(/[^/]+)+$');
 
   function Symbol(name) {
-    var names;
     if (objectHasOwnProperty(symbols, name))
       return symbols[name];
     if (!isSymbol(this))
       return new Symbol(name);
-    if (multipart.test(name)) {
-      names = name.split('/');
-      this.parts = Array(names.length);
-      for (var i = 0; i < names.length; i++)
-        this.parts[i] = isNaN(names[i]) ? names[i] : +names[i];
-      freezeObject(this.parts);
-    }
     this.name = name;
+    if (multipart.test(name))
+      this.parts = get_symbol_parts(name);
     freezeObject(this);
     symbols[name] = this;
+  }
+
+  function get_symbol_parts(name) {
+    var i, names = name.split('/'), parts = Array(names.length);
+    for (i = 0; i < names.length; i++)
+      parts[i] = isNaN(names[i]) ? names[i] : +names[i];
+    freezeObject(parts);
+    return parts;
   }
 
   function Cons(head, tail) {
@@ -257,10 +259,11 @@ var COFY = (function (nil) {
       return builtins;
     }
 
-    var lower_than = function (a, b) { return a < b; };
-    var greater_than = function (a, b) { return a > b; };
-    var lower_than_or_equal = function (a, b) { return a <= b; };
-    var greater_than_or_equal = function (a, b) { return a >= b; };
+    function lower_than(a, b) { return a < b; }
+    function greater_than(a, b) { return a > b; }
+    function lower_than_or_equal(a, b) { return a <= b; }
+    function greater_than_or_equal(a, b) { return a >= b; }
+
     var builtins = complete_builtins({
       'nil': nil,
       'nil?': function (x) { return x === nil; },
@@ -366,10 +369,10 @@ var COFY = (function (nil) {
     function compile_call(s_expr) {
       var expr = map(compile, s_expr), o = {};
       return function (env) {
-        var fn = evaluate(expr.head, env), values = [];
+        var fn = evaluate(expr.head, env), values = [], rest;
         if (!isFunction(fn))
           runtimeError('Not a function: ' + print(s_expr.head));
-        for (var rest = expr.tail; isCons(rest); rest = rest.tail)
+        for (rest = expr.tail; isCons(rest); rest = rest.tail)
           values.push(evaluate(rest.head, env));
         return fn.apply(o, values);
       };
