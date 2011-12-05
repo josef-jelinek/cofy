@@ -205,6 +205,41 @@ var COFY = (function (nil) {
   }());
 
   var create_global_env = (function () {
+    var builtins = complete_builtins({
+      'nil': nil,
+      'nil?': function (x) { return x === nil; },
+      'true': true,
+      'false': false,
+      'string?': isString,
+      'fn?': isFunction,
+      'symbol?': isSymbol,
+      'cons': function (a, b) { return Cons(a, b); },
+      'cons?': isCons,
+      'first': function (x) { return x.head; },
+      'rest': function (x) { return x.tail; },
+      'var': Var,
+      'var?': isVar,
+      'deref': function (x) { return x.value; },
+      'swap!': swap,
+      'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
+      '.apply': function (o, f, args) { return o[f].apply(o, list_to_array(args)); },
+      '.call': function (o, f) { return o[f].apply(o, Array.prototype.slice.call(arguments, 2)); },
+      '+': function () { return sum.apply(null, arguments); },
+      '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
+      '*': function () { return product.apply(null, arguments); },
+      '/': function (a, b) { return a / b; },
+      'remainder': function (a, b) { return a % b; },
+      '<': function () { return check_array_pairs(arguments, lower_than); },
+      '>': function () { return check_array_pairs(arguments, greater_than); },
+      '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
+      '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
+      '=': function (a, b) { return equal(a, b); },
+      'identical?': function (a, b) { return a === b; },
+      '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
+      'set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
+      'array': list_to_array,
+      'math': Math
+    });
 
     function list_to_array(list) {
       var values = [], rest;
@@ -264,51 +299,17 @@ var COFY = (function (nil) {
     function lower_than_or_equal(a, b) { return a <= b; }
     function greater_than_or_equal(a, b) { return a >= b; }
 
-    var builtins = complete_builtins({
-      'nil': nil,
-      'nil?': function (x) { return x === nil; },
-      'true': true,
-      'false': false,
-      'string?': isString,
-      'fn?': isFunction,
-      'symbol?': isSymbol,
-      'cons': function (a, b) { return Cons(a, b); },
-      'cons?': isCons,
-      'first': function (x) { return x.head; },
-      'rest': function (x) { return x.tail; },
-      'var': Var,
-      'var?': isVar,
-      'deref': function (x) { return x.value; },
-      'swap!': swap,
-      'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
-      '.apply': function (o, f, args) { return o[f].apply(o, list_to_array(args)); },
-      '.call': function (o, f) { return o[f].apply(o, Array.prototype.slice.call(arguments, 2)); },
-      '+': function () { return sum.apply(null, arguments); },
-      '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
-      '*': function () { return product.apply(null, arguments); },
-      '/': function (a, b) { return a / b; },
-      'remainder': function (a, b) { return a % b; },
-      '<': function () { return check_array_pairs(arguments, lower_than); },
-      '>': function () { return check_array_pairs(arguments, greater_than); },
-      '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
-      '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
-      '=': function (a, b) { return equal(a, b); },
-      'identical?': function (a, b) { return a === b; },
-      '.': function (o, field) { return isSymbol(field) ? o[field.name] : o[field]; },
-      'set!': function (o, field, value) { o[isSymbol(field) ? field.name : field] = value; },
-      'array': list_to_array,
-      'math': Math
-    });
+    function add_bindings(env, bindings) {
+      for (var key in bindings)
+        if (objectHasOwnProperty(bindings, key))
+          defineFrozenProperty(env, key, bindings[key]);
+    }
 
     return function (external) {
-      var key, env = {};
-      for (key in builtins)
-        if (objectHasOwnProperty(builtins, key))
-          defineFrozenProperty(env, key, builtins[key]);
+      var env = {};
+      add_bindings(env, builtins);
       if (external)
-        for (key in external)
-          if (objectHasOwnProperty(external, key))
-            defineFrozenProperty(env, key, external[key]);
+        add_bindings(env, external);
       return env;
     };
   }());
@@ -427,8 +428,7 @@ var COFY = (function (nil) {
 
     function compile_use(s_expr) {
       return function (env) {
-        var rest;
-        for (rest = s_expr; isCons(rest); rest = rest.tail) {
+        for (var rest = s_expr; isCons(rest); rest = rest.tail) {
           if (rest.head.parts) {
             import_one(rest.head.parts, env);
           } else {
