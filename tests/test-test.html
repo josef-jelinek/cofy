@@ -10,41 +10,48 @@
     #log { padding: 10px; font-family: monospace; }
   </style>
   <script>
-    var tests = {
-      testPass: function() { this.isTrue(true); },
-      testTruthy: function() {
-        this.isTruthy(true);
-        this.isTruthy(1);
-        this.isTruthy(-1);
-        this.isTruthy(1/0);
-        this.isTruthy(-1/0);
-        this.isTruthy(' ');
-        this.isTruthy([]);
-        this.isTruthy({});
-      },
-      testFalsy: function(nil) {
-        this.isFalsy(false);
-        this.isFalsy(null);
-        this.isFalsy(nil);
-        this.isFalsy(0);
-        this.isFalsy('');
-        this.isFalsy(0/0);
-      },
-      testSame: function(nil) {
-        this.isSame(true, true);
-        this.isSame(false, false);
-        this.isSame(0, 0);
-        this.isSame('a', 'a');
-        this.isSame(null, null);
-        this.isSame(nil);
-        this.isSame(1/0, 1/0);
-        this.isSame(-1/0, -1/0);
-        this.isNotSame(1/0, -1/0);
-        this.isNotSame(0/0, 0/0);
-        this.isNotSame([], []);
-        this.isNotSame({}, {});
-      }
-    };
+    var tests = (function (nil) {
+      return {
+        test_pass: function() {
+          this.isTrue(true);
+        },
+        test_truthy: function () {
+          this.isTruthy(true);
+          this.isTruthy(1);
+          this.isTruthy(-1);
+          this.isTruthy(1/0);
+          this.isTruthy(-1/0);
+          this.isTruthy(' ');
+          this.isTruthy([]);
+          this.isTruthy({});
+        },
+        test_falsy: function () {
+          this.isFalsy(false);
+          this.isFalsy(null);
+          this.isFalsy(nil);
+          this.isFalsy(0);
+          this.isFalsy('');
+          this.isFalsy(0/0);
+        },
+        test_same: function () {
+          this.isSame(true, true);
+          this.isSame(false, false);
+          this.isSame(0, 0);
+          this.isSame('a', 'a');
+          this.isSame(null, null);
+          this.isSame(nil);
+          this.isSame(1/0, 1/0);
+          this.isSame(-1/0, -1/0);
+          this.isNotSame(1/0, -1/0);
+          this.isNotSame(0/0, 0/0);
+          this.isNotSame([], []);
+          this.isNotSame({}, {});
+        },
+        test_error: function () {
+          this.throwsError(function () { throw { name: "SomeError", message: "Some message"}; });
+        }
+      };
+    }());
   </script>
 </head>
 <body onload="run()">
