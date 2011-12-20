@@ -9,21 +9,23 @@
       src: url('fonts/anonymouspro.eot') format('eot');
       src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
     }
-    html, body { margin: 0; padding: 0; }
-    body { font: bold 22px 'Anonymous Pro', monospace; background: #F8FFF0; color: #420; padding: 30px 50px; }
+    html, body, ul, li { margin: 0; padding: 0; border: 0; }
+    body { font: italic 14pt/1.4 'Anonymous Pro', monospace; background: #FFF; color: #420; padding: 50px; }
     p { margin: 10px 0; }
     a { color: #361; text-decoration: none; }
     a:hover { color: #481; text-decoration: underline; }
-    #logo { margin-bottom: 20px; }
+    #logo { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #DDD; }
+    ul { list-style: none; }
+    li { padding-left: 30px; background: url(img/lambdot.png) 0 50% no-repeat; }
   </style>
 </head>
 <body>
   <div id="logo"><img src="img/cofy-logo-brown.png" width=180 height=77></div>
   <p>A lisp language for a browser.</p>
   <ul>
-  <li><a href="interactive.html">Interactive example</a></li>
-  <li><a href="tests/test-cofy.html">Cofy language unit tests</a></li>
-  <li><a href="tests/test-test.html">Test framework unit tests</a></li>
+    <li><a href="interactive.html">Interactive example</a></li>
+    <li><a href="tests/test-cofy.html">Cofy language unit tests</a></li>
+    <li><a href="tests/test-test.html">Test framework unit tests</a></li>
   </ul>
 </body>
 </html>
