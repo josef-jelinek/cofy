@@ -12,7 +12,7 @@ var COFY = (function (nil) {
   function runtime_error(message) {
     throw { name: 'RuntimeError', message: message || 'An error' };
   }
-
+  // utilizing ES5 functions if available for immutability
   var create_object_from_prototype = Object.create || function (o) {
     function F() {}
     F.prototype = o || Object.prototype;
@@ -31,11 +31,6 @@ var COFY = (function (nil) {
     if (object_has_own_property(obj, key))
       runtime_error('Redefining "' + key + '"');
     obj[key] = value;
-  };
-  var is_function = typeof alert === 'function' && function (x) {
-    return typeof x === 'function';
-  } || function (x) {
-    return typeof x === 'function' || x !== null && typeof x === 'object' && 'call' in x;
   };
 
   var symbols = {}, multipart = RegExp('^[^/]+(/[^/]+)+$');
@@ -87,7 +82,14 @@ var COFY = (function (nil) {
   function is_cons(x) { return x instanceof Cons; }
   function is_var(x) { return x instanceof Var; }
   function is_syntax(x) { return x instanceof Syntax; }
+  // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
+  var is_function = typeof alert === 'function' && function (x) {
+    return typeof x === 'function';
+  } || function (x) {
+    return typeof x === 'function' || x !== null && typeof x === 'object' && 'call' in x;
+  };
 
+  // recursive descent parser
   var parse = (function () {
     var token_actions, tokens, index, unescape_chars = { '\\n': '\n', '\\r': '\r', '\\t': '\t' };
 
