@@ -235,7 +235,9 @@ var COFY = (function (nil) {
       '.': function (o, field) { return is_symbol(field) ? o[field.name] : o[field]; },
       'set!': function (o, field, value) { o[is_symbol(field) ? field.name : field] = value; },
       'array': list_to_array,
-      'math': Math
+      'math': Math,
+      'schedule': function(f, ms) { return setTimeout(f, ms || 0); },
+      'unschedule': function(id) { return clearTimeout(id); }
     });
 
     function list_to_array(list) {
