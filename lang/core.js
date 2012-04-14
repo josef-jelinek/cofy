@@ -489,7 +489,7 @@ var COFY = (function (nil) {
       return {
         eval: function (s_expr) { return compile(s_expr)(env); },
         read_eval: function (s) { return compile(parse(s))(env); },
-        read_eval_print: function (s) { return print(compile(parse(s))(env)); },
+        read_eval_print: function (s) { return print(compile(parse(s))(env)); }
       }
     }
   };
