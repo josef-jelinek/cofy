@@ -1,8 +1,8 @@
-Cofy - A Lisp compiler / interpreter runing inside a browser.
+Cofy - A Lisp compiler / interpreter running inside a web browser.
 by Josef Jelinek
 http://cofylang.org
 
-[public domain license]
+[public domain]
 
 The purpose of this project is to allow executing dynamically generated code
 inside a web browser without security risks. For that purpose a small dialect of
@@ -15,8 +15,8 @@ There are three stages of the code:
  3. compiled functions ready for evaluation
 
 A result of the evaluated functions is a Lisp data structure.
-A lisp datastucture can be sonverted to a string or compiled as a Lisp program.
-This allows for flexible metaprogramming.
+A data stucture can be converted to a string, processed by a Lisp or JavaScript
+function, or compiled again as a Lisp code (metaprogramming).
 
 Evaluation environment is capability-based. The evaluated code has access only
 to features which are passed by the invoking code.
