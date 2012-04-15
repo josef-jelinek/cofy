@@ -1,14 +1,14 @@
+Planned features
 
-to do (random order):
+to do:
   - regular expressions
-  - static environment analysis -> syntax macros!
+  - static environment analysis -> syntax macros
   - a way for iteration (either trampoline or recur syntax)
-  - full javascript interop (or reasonably limited for security)
+  - lazy sequences (another approach for iteration)
   - running scripts from application/x-cofy script tags
-  - language library (in cofy itself)
-  - modules (passing external bindings)
+  - cofy function library
 
+longer-term to do:
   - persistent data structures
-  - lazy sequences (maybe just library)
-  - compile mode using eval (after having benchmarks)
+  - compile mode using eval (after benchmarking)
   - server-side compiler to javascript
