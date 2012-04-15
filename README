@@ -1,14 +1,25 @@
+Cofy - A Lisp compiler / interpreter runing inside a browser.
+by Josef Jelinek
+http://cofylang.org
 
-to do (random order):
-  - regular expressions
-  - static environment analysis -> syntax macros!
-  - a way for iteration (either trampoline or recur syntax)
-  - full javascript interop (or reasonably limited for security)
-  - running scripts from application/x-cofy script tags
-  - language library (in cofy itself)
-  - modules (passing external bindings)
+[public domain license]
 
-  - persistent data structures
-  - lazy sequences (maybe just library)
-  - compile mode using eval (after having benchmarks)
-  - server-side compiler to javascript
+The purpose of this project is to allow executing dynamically generated code
+inside a web browser without security risks. For that purpose a small dialect of
+Lisp is used.
+
+There are three stages of the code:
+
+ 1. textual representation of the source in a string
+ 2. parsed recursive lisp data structures
+ 3. compiled functions ready for evaluation
+
+A result of the evaluated functions is a Lisp data structure.
+A lisp datastucture can be sonverted to a string or compiled as a Lisp program.
+This allows for flexible metaprogramming.
+
+Evaluation environment is capability-based. The evaluated code has access only
+to features which are passed by the invoking code.
+
+More information can be found at http://cofylang.org
+
