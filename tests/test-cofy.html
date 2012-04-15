@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cofy Lisp Interpreter in JavaScript Test</title>
+  <title>Cofy - A Lisp Interpreter in JavaScript - Tests</title>
   <style>
     html, body { margin: 0; padding: 0; }
     body { font: 12px Arial, sans-serif; background: #FFF; color: #000; padding: 20px; }
@@ -49,6 +49,15 @@
             this.isSame(COFY.read('0 1').head, 0);
             this.isSame(COFY.read('0 1').tail.head, 1);
             this.isSame(COFY.read('0 1').tail.tail, null);
+          },
+          comments: function () {
+            this.isSame(COFY.read('0 ; c').head, 0);
+            this.isSame(COFY.read('0 ; c').tail, null);
+            this.isSame(COFY.read(';c c\r\n1').head, 1);
+            this.isSame(COFY.read(';c c\r\n1').tail, null);
+            this.isSame(COFY.read('0\r\n;;c c \r\n2').head, 0);
+            this.isSame(COFY.read('0\r\n;;c c \r\n2').tail.head, 2);
+            this.isSame(COFY.read('0\r\n;;c c \r\n2').tail.tail, null);
           }
         },
         eval: {
