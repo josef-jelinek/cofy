@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cofy Lisp Interpreter in JavaScript</title>
+  <title>Cofy - A Lisp Interpreter in JavaScript - Evaluator</title>
   <style>
     @font-face {
       font-family: 'Anonymous Pro';
@@ -12,15 +12,14 @@
       src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
     }
     html, body { margin: 0; padding: 0; }
-    body { font: 12px Arial, sans-serif; background: #111; color: #EEE; padding: 30px 50px; }
+    body { font: italic 14pt/1.4 'Anonymous Pro', monospace; background: #EEE; color: #420; padding: 50px; }
     #editor {
       height: 300px;
       margin: 15px 0 0 0;
       padding: 0 0 0 10px;
-      border-width: 10px 0;
-      border-color: #F0F0F0;
+      border-width: 1px;
+      border-color: #DDD;
       border-style: solid;
-      border-radius: 10px;
       background: #FFF;
     }
     #input {
@@ -37,10 +36,9 @@
     #input:focus { outline: none; }
     #output {
       padding: 10px 20px;
-      border: 10px solid #E0E0E0;
-      border-width: 10px 0;
-      border-radius: 10px;
-      background: #EEE;
+      border: 10px solid #DDD;
+      border-width: 1px;
+      background: #FFF;
       color: #555;
       font: 16px 'Anonymous Pro', monospace;
     }
@@ -64,8 +62,9 @@
   </style>
 </head>
 <body>
-  <div><img src="img/cofy-logo.png" width=128 height=55></div>
-  <div id="editor"><textarea id="input">(def (inc n) (+ n 1))
+  <div id="logo"><img src="img/cofy-logo-o.png" width=180 height=77></div>
+  <div id="editor"><textarea id="input">; map function example
+(def (inc n) (+ n 1))
 (def (map f x)
      (if (= x ())
          ()
