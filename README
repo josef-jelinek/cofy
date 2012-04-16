@@ -21,5 +21,21 @@ function, or compiled again as a Lisp code (metaprogramming).
 Evaluation environment is capability-based. The evaluated code has access only
 to features which are passed by the invoking code.
 
+
+Source code:
+
+lang/core.js       - the language compiler/interpreter
+
+tools/test.js      - JS unit testing framework
+tests/test-cofy.js - Cofy language unit tests
+tests/test-test.js - unit testing framework unit tests
+
+index.html         - introduction
+interactive.html   - interactive code examples
+integration.html   - description of using Cofy in web pages
+language.html      - Cofy language reference
+style.css          - common styles for *.html
+img/*              - graphics
+
 More information can be found at http://cofylang.org
 
