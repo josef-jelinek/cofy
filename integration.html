@@ -67,7 +67,7 @@
     <li><span class="code">COFY.read_eval('(fn (o) o/a/b)')({ a: { b: 1 } })</span> =&gt; <span class="code">1</span><br>
     object access syntax sugar</li>
     <li><span class="code">COFY.read_eval('(fn (o) (o/f o/a))')({ f: function (a) { return a + 1; }, a: 1 })</span> =&gt; <span class="code">2</span><br>
-    method calls syntax sugar</li>
+    method call syntax sugar</li>
     <li><span class="code">COFY.read_eval('(fn (a) ((. a 0) (. a 1)))')([function (a) { return a + 1; }, 1])</span> =&gt; <span class="code">2</span><br>
     array access</li>
     <li><span class="code">COFY.read_eval('(fn (o) o/1/b)')([ 0, { b: 1 } ])</span> =&gt; <span class="code">1</span><br>
@@ -86,8 +86,8 @@
     <span class="code">arr2[1]</span> =&gt; <span class="code">2</span></li>
   </ul>
 
-  <p>Evaluation environment is capability-based. The evaluated code has access only
-  to features which are passed by the invoking code. However passing e.g. one specific DOM element gives access to the entire DOM, as there are public parent links in the element.</p>
+  <p>The evaluation environment is capability-based. The evaluated code has access only
+  to the external objects and functions passed by the invoking code. However passing e.g. one specific DOM element gives access to the entire DOM, as there are public parent links in the element. This can be solved by passing functions that manipulate the element instead.</p>
 </body>
 </html>
 
