@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cofy - A Lisp Interpreter in JavaScript</title>
+  <style>
+    @font-face {
+      font-family: 'Anonymous Pro';
+      src: url('fonts/anonymouspro.eot') format('eot');
+      src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
+    }
+    html, body, ul, li { margin: 0; padding: 0; border: 0; }
+    body { font: italic 14pt/1.6 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
+    h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
+    p { margin: 10px 0; }
+    a { color: #361; text-decoration: none; }
+    a:hover { color: #481; text-decoration: underline; }
+    ul { list-style: none; }
+    li { padding-left: 30px; background: url(img/lambdot.png) 0 8px no-repeat; }
+    .code { font-size: 90%; font-style: normal; font-weight: bold; color: #776; }
+    li em { font-style: italic; }
+  </style>
+</head>
+<body>
+  <div id="logo"><img src="img/cofy-logo-o.png" width=180 height=77></div>
+  <h1>Language reference</h1>
+
+  <p>The language is composed of comments, primitives, lists, functions, special syntax forms, and a few other special types.</p>
+  <p><b>Comments:</b> Start with a semicolon and ends at the end of the same line.</p>
+  <p><b>Data types:</b></p>
+  <ul>
+    <li>Numbers - a standard JavaScript number type (floating point)</li>
+    <li>Strings - a sequence of characters enclosed by double quotes, multiline, escape char sequences: <span class="code">\\ \" \n \r \t</span></li>
+    <li>Symbols - a sequence of characters not containing a whitespace, apostrophe, parentheses, double quote, or semicolon; values can be bound to symbols in an execution environment</li>
+    <li>Lists - a sequence of other data types enclosed in parentheses</li>
+    <li>Functions - is first class, defining a function creates a closure aware of its lexical environment</li>
+    <li>Variables - the only mutable objects (except for those of JavaScript) for controlled mutation and equality comparisons</li>
+  </ul>
+
+  <p><b>Special syntax forms:</b></p>
+  <ul>
+    <li><span class="code">(quote <em>expr</em>)</span> - prevents evaluation of <em>expr</em></li>
+    <li><span class="code">(fn () <em>body</em>)</span> - defines a function with no parameters</li>
+    <li><span class="code">(fn (<em>arg</em>) <em>body</em>)</span> - defines a function with one parameter</li>
+    <li><span class="code">(fn (<em>arg1 arg2</em>) <em>body</em>)</span> - defines a function with two parameters (any number of parameters can be used)</li>
+    <li><span class="code">(fn (<em>arg1 : args</em>) <em>body</em>)</span> - defines a function with at least one parameter, the rest being collected to a list (any number of parameters in front of <span class="code">: <em>args</em></span> can be used)</li>
+    <li><span class="code">(fn <em>args</em> <em>body</em>)</span> - defines a function with any number of parameters collected to a list</li>
+    <li><span class="code">(if <em>test</em> <em>body-true</em>)</span> - conditional expression; returns 'undefined' if <em>test</em> is false</li>
+    <li><span class="code">(if <em>test</em> <em>body-true</em> <em>body-false</em>)</span> - conditional expression</li>
+    <li><span class="code">(def <em>symbol</em> <em>expr</em>)</span> - binds a value of <em>expr</em> (evaluates it) to <em>symbol</em> in the current environment</li>
+    <li><span class="code">(def <em>symbol1</em> <em>expr1</em> <em>symbol2</em> <em>expr2</em>)</span> - multiple bind (any number of symbol-expr pairs can be used, bindings are processed sequentially in the same environment)</li>
+    <li><span class="code">(do <em>expr1</em> <em>expr2</em>)</span> - evaluates sequentially all expressions and returns the result of the last one</li>
+    <li><span class="code">(use <em>module</em>)</span> - imports all properties of <em>module</em> object as bindings in the current environment; used for passing environments from JavaScript</li>
+    <li><span class="code">(use <em>module1</em> <em>module2</em>)</span> - imports two modules (any number can be used)</li>
+  </ul>
+
+  <p><b>Default global bindings (immutable):</b></p>
+  <ul>
+    <li><span class="code">nil</span> - JavaScript undefined</li>
+    <li><span class="code">nil?</span> - one-parameter function testing the parameter for <em>nil</em></li>
+    <li><span class="code">true</span> - JavaScript true</li>
+    <li><span class="code">false</span> - JavaScript false</li>
+    <li><span class="code">string?</span> - one-parameter function testing the parameter for string</li>
+    <li><span class="code">fn?</span> - one-parameter function testing the parameter for function</li>
+    <li><span class="code">symbol?</span> - one-parameter function testing the parameter for symbol</li>
+    <li><span class="code">cons</span> - two-parameter function constructing a list with the first parameter as a list head and the second parameter as a list tail</li>
+    <li><span class="code">cons?</span> - one-parameter function testing the parameter for list (or rather a cons cell that is a list building block)</li>
+    <li><span class="code">first</span> - one-parameter function taking a list and returning its first item</li>
+    <li><span class="code">rest</span> - one-parameter function taking a list and returning it without its first item</li>
+    <li><span class="code">var</span> - one-parameter function that creates a variable</li>
+    <li><span class="code">var?</span> - one-parameter function testing the parameter for variable</li>
+    <li><span class="code">deref</span> - one-parameter function that extracts a value from a variable</li>
+    <li><span class="code">swap!</span> - function that takes a variable and a value and assigns the value to the variable and returns the old value</li>
+    <li><span class="code">apply</span> - takes a function and a list, and applies the function to the items of the list</li>
+    <li><span class="code">+ *</span> - sum and multiplication functions taking any number of parameters</li>
+    <li><span class="code">-</span> - one-parameter negation or two-parameter subtract function</li>
+    <li><span class="code">/</span> - two-parameter division functions</li>
+    <li><span class="code">remainder</span> - two-parameter remainder functions</li>
+    <li><span class="code">&lt; &gt; &lt;= &gt;=</span> - comparison functions taking any number of parameters</li>
+    <li><span class="code">=</span> - two-parameter function comparing for structural equality; only variables are compared by identity</li>
+    <li><span class="code">identical?</span> - two-parameter function comparing arguments for identity</li>
+    <li><span class="code">schedule</span> - function that takes a function and a number, schedules the function to be run in the specified number of milliseconds, and returns an id of the created timeout (like setTimeout in JavaScript)</li>
+    <li><span class="code">unschedule</span> - function that takes a timeout id and removes the scheduled function (like clearTimeout in JavaScript)</li>
+    <li><span class="code">array</span> - function that takes a list and returns an array containing all the list items</li>
+    <li><span class="code">.</span> - function that takes a JavaScript object and a property name (a symbol or string) and returns the value of the property</li>
+    <li><span class="code">.apply</span> - takes a JavaScript object, a property name (a symbol or string), and a list and applies the property value (a function) to the items of the list</li>
+    <li><span class="code">.call</span> - takes a JavaScript object, a property name (a symbol or string), and any number of additional parameters and applies the property value (a function) to the parameters</li>
+    <li><span class="code">set!</span> - function that takes a JavaScript object a property name (a symbol or string) and a value and sets the property of the object to the value; this is a dangerous operation that can compromise the page security if a sensitive object is passed to the script</li>
+  </ul>
+
+  <p>For interactive examples see <a href="interactive.html">Interactive exampes</a>.</p>
+  <p>For examples of interaction between Cofy and JavaScript see <a href="integration.html">JavaScript integration</a>.</p>
+</body>
+</html>
+

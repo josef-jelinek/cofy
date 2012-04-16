@@ -10,23 +10,38 @@
       src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
     }
     html, body, ul, li { margin: 0; padding: 0; border: 0; }
-    body { font: italic 14pt/1.4 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
+    body { font: italic 14pt/1.6 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
+    h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
     p { margin: 10px 0; }
     a { color: #361; text-decoration: none; }
     a:hover { color: #481; text-decoration: underline; }
-    #logo { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #DDD; }
     ul { list-style: none; }
     li { padding-left: 30px; background: url(img/lambdot.png) 0 50% no-repeat; }
+    .footnote { margin-top: 40px; font-size: 88%; }
   </style>
 </head>
 <body>
   <div id="logo"><img src="img/cofy-logo-o.png" width=180 height=77></div>
-  <p>A lisp language for a browser.</p>
+  <h1>A Lisp language for a browser.</h1>
+  <p>The purpose of this project is to allow executing dynamically generated or loaded code
+  inside a web browser with capability based security.</p>
+  <p>The language is a compact dialect of Lisp, which allows to generate programs that generate programs...</p>
+  <p>The source code is processed by the browser and does not need to be precompiled anywhere else.
+  In addition, minifying the source code is trivial.</p>
   <ul>
-    <li><a href="interactive.html">Interactive example</a></li>
-    <li><a href="tests/test-cofy.html">Cofy language unit tests</a></li>
-    <li><a href="tests/test-test.html">Test framework unit tests</a></li>
+    <li><a href="interactive.html">Interactive code examples</a></li>
+    <li><a href="language.html">Language reference</a></li>
+    <li><a href="integration.html">Integration with JavaScript</a></li>
+    <li><a href="https://github.com/josef-jelinek/cofy">Repository at github</a></li>
   </ul>
+
+  <div class="footnote">
+  <p>Developed using a <a href="https://github.com/josef-jelinek/cofy/blob/master/tools/test.js">custom unit test framework</a></p>
+  <ul>
+    <li><a href="tests/test-cofy.html">Run language unit tests</a></li>
+    <li><a href="tests/test-test.html">Run test framework unit tests</a></li>
+  </ul>
+  </div>
 </body>
 </html>
 

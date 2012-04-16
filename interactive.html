@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cofy - A Lisp Interpreter in JavaScript - Evaluator</title>
+  <title>Cofy - A Lisp Interpreter in JavaScript - Examples</title>
   <style>
     @font-face {
       font-family: 'Anonymous Pro';
@@ -12,37 +12,37 @@
       src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
     }
     html, body { margin: 0; padding: 0; }
-    body { font: italic 14pt/1.4 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
-    #editor {
-      height: 300px;
+    body { font: italic 14pt/1.6 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
+    h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
+    p { margin: 10px 0; }
+    .editor {
       margin: 15px 0 0 0;
       padding: 0 0 0 10px;
-      border-width: 1px;
-      border-color: #DDD;
-      border-style: solid;
+      border: 1px solid #DDD;
       background: #FFF;
     }
-    #input {
+    .editor textarea {
+      display: block;
       width: 100%;
-      height: 300px;
       resize: none;
       margin: 0;
-      padding: 0;
+      padding: 10px 0;
       border: 0;
       background: #FFF;
       color: #000;
       font: 16px 'Anonymous Pro', monospace;
     }
-    #input:focus { outline: none; }
-    #output {
+    .editor textarea:focus { outline: none; }
+    .output {
       padding: 10px 20px;
-      border: 10px solid #DDD;
-      border-width: 1px;
+      border: 1px solid #DDD;
       background: #FFF;
       color: #555;
       font: 16px 'Anonymous Pro', monospace;
     }
-    #eval {
+    .output small { color: #48F; }
+    .output em { color: #C00; }
+    .eval {
       display: inline-block;
       height: 26px;
       margin: 15px;
@@ -55,52 +55,99 @@
       font: bold italic 20px/26px 'Anonymous Pro', monospace;
       text-decoration: none;
     }
-    #eval:hover { background: #FFB; }
-    #eval:active { background: #FFB; border-style: inset; }
-    #eval:focus { outline: none; }
-    small { color: #48F; }
-    em { color: #C00; }
+    .eval:hover { background: #FFB; }
+    .eval:active { background: #FFB; border-style: inset; }
+    .eval:focus { outline: none; }
+    canvas { display: block; margin: 10px auto; width: 200px; height: 200px; background: #FFF; border: 1px solid #DDD; }
   </style>
 </head>
 <body>
   <div id="logo"><img src="img/cofy-logo-o.png" width=180 height=77></div>
-  <div id="editor"><textarea id="input">; map function example
+  <h1>Code Examples</h1>
+
+  <p>A recursive function 'map' takes a function and a list. It traverses the list and returns a new list.
+  Each element in the new list is a result of applying the function to the corresponding element of the original list.</p>
+  <div class="editor"><textarea id="input1" rows=8>;; map function example
 (def (inc n) (+ n 1))
 (def (map f x)
-     (if (= x ())
-         ()
-         (cons (f (first x))
-               (map f (rest x)))))
+     (if (= x ()) ()
+                  (cons (f (first x))
+                        (map f (rest x)))))
 
 (map inc '(1 2 3))</textarea></div>
-  <a id="eval" href="#" onclick="return read_eval_print(document.getElementById('input').value)">Evaluate</a>
-  <div id="output"><b>Output Window</b><br></div>
+  <a class="eval" href="#" onclick="return read_eval_print('input1', 'output1')">Evaluate</a>
+  <div id="output1" class="output"><b>Output Window</b><br></div>
+
+  <p>The following script has been passed a 'document' object named 'page' thus it can make a changes to the entire web page.
+  It also shows the familiar 'setTimeout' function named 'schedule' in Cofy.</p>
+  <div class="editor"><textarea id="input2" rows=8>(set! page/body/style 'background "#DDF")
+
+(def id (schedule (fn () (set! page/body/style 'background "#FFD")) 500))
+
+(cons id page/body/style/background)</textarea></div>
+  <a class="eval" href="#" onclick="return read_eval_print('input2', 'output2', { page: document })">Evaluate</a>
+  <div id="output2" class="output"><b>Output Window</b><br></div>
+
+  <p>The following script has been passed functions 'move', 'line', 'stroke', and 'clear' that can change the canvas bellow.
+  The script has no access to the other parts of the canvas or the page, so it cannot affect anything else unexpectedly.</p>
+  <div class="editor"><textarea id="input3" rows=8>(def (draw x y dx dy n)
+     (if (&gt; n 1)
+         (do (line (+ x dx) (+ y dy))
+             (draw x y (/ dy -1.03) (/ dx 1.03) (- n 1)))))
+(clear)
+(move 190 190)
+(draw 100 100 90 90 80)
+(stroke)</textarea></div>
+  <a class="eval" href="#" onclick="return read_eval_print('input3', 'output3', canvas_functions('canvas3'))">Evaluate</a>
+  <div id="output3" class="output"><b>Output Window</b><br></div>
+  <canvas id="canvas3" width=200 height=200></canvas>
+
   <script src="lang/core.js"></script>
   <script>
-    var OUT = (function() {
-      var attempt = 1, out = document.getElementById('output');
+    function html_encode(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    }
 
-      function html_encode (s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    var OUT = (function() {
+      var outs = {};
+
+      var get_out = function (id) {
+        if (!outs[id])
+          outs[id] = { element: document.getElementById(id), attempt: 1 };
+        return outs[id];
       };
 
       return {
-        display: function (s) {
-          out.innerHTML += '<small>' + attempt++ + '</small> ' + html_encode(s) + '<br>';
+        display: function (id, s) {
+          var out = get_out(id);
+          out.element.innerHTML += '<small>' + out.attempt++ + '</small> ' + html_encode(s) + '<br>';
         },
-        error: function (e) {
-          out.innerHTML += '<em>' + e.name + ": " + e.message  + '</em><br>';
+        error: function (id, e) {
+          get_out(id).element.innerHTML += '<em>' + e.name + ": " + html_encode(e.message)  + '</em><br>';
         }
       };
     }());
 
-    function read_eval_print(s) {
+    function read_eval_print(id_in, id_out, env) {
+      var s = document.getElementById(id_in).value;
       try {
-        OUT.display(COFY.read_eval_print(s));
+        var cofy = COFY.create(env);
+        OUT.display(id_out, cofy.read_eval_print(s));
       } catch (e) {
-        OUT.error(e);
+        OUT.error(id_out, e);
       }
       return false;
+    }
+
+    function canvas_functions(id) {
+      var canvas = document.getElementById(id);
+      var context = canvas.getContext('2d');
+      return {
+        move: function (x, y) { context.beginPath(); context.moveTo(x, y); },
+        line: function (x, y) { context.lineTo(x, y); },
+        stroke: function () { context.stroke(); },
+        clear: function () { context.clearRect(0, 0, 200, 200); }
+      };
     }
   </script>
 </body>

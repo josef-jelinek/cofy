@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cofy - A Lisp Interpreter in JavaScript</title>
+  <style>
+    @font-face {
+      font-family: 'Anonymous Pro';
+      src: url('fonts/anonymouspro.eot') format('eot');
+      src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
+    }
+    html, body, ul, li { margin: 0; padding: 0; border: 0; }
+    body { font: italic 14pt/1.6 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
+    h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
+    p { margin: 10px 0; }
+    a { color: #361; text-decoration: none; }
+    a:hover { color: #481; text-decoration: underline; }
+    ul { list-style: none; }
+    li { padding-left: 30px; background: url(img/lambdot.png) 0 8px no-repeat; }
+    .code { font-size: 90%; font-style: normal; font-weight: bold; color: #776; }
+  </style>
+</head>
+<body>
+  <div id="logo"><img src="img/cofy-logo-o.png" width=180 height=77></div>
+  <h1>Integration with JavaScript</h1>
+
+  <p>The first step is to include the 'core.js' script.</p>
+  <p class="code">&lt;script src="lang/core.js"&gt;&lt;/script&gt;</p>
+  <p><b>There are three stages of the code:</b></p>
+
+  <ul>
+    <li>textual representation of the source in a string</li>
+    <li>parsed recursive lisp data structures</li>
+    <li>compiled functions ready for evaluation</li>
+  </ul>
+
+  <p>There are two common ways to execute the code in a JavaScript string. Both ways use read_eval function that parses the string to a Lisp data structure, compiles the data structure to a function and calls the function that returns the result of the last statement in the source code.</p>
+  <ul>
+    <li><span class="code">COFY.read_eval(<em>code-string</em>)</span></li>
+  </ul>
+  <p>In this case a fresh default environment is used every time the read_eval function is called and global defs are forgotten.</p>
+  <ul>
+    <li><span class="code">var cofy = COFY.create(<em>bindings</em>); cofy.read_eval(<em>code-string</em>)</span></li>
+  </ul>
+  <p>In this case a fresh default environment or an environment ammended by 'bindings' object is created once and can be reused among multiple read_eval calls.</p>
+  <p>A result of the evaluated function is a Lisp data structure.</p>
+  <p>A data stucture can be converted to a string by <span class="code">COFY.print(<em>data</em>)</span>,
+  processed by Cofy using <span class="code">COFY.eval(<em>data</em>)</span> or <span class="code">cofy.eval(<em>data</em>)</span>,
+  or processed by a JavaScript function. It can be also processed by a previously compiled cofy function.</p>
+  <p>There are more functions to interract with Cofy: <span class="code">COFY.read(<em>code-string</em>)</span> to parse the data or program, <span class="code">COFY.compile(<em>data</em>)</span> to compile the data to a cofy program, and <span class="code">COFY.read_eval_print(<em>code-string</em>)</span> to do the entire transformation from an input string to an output string.</p>
+
+
+  <p><b>Examples (taken from working unit tests)</b></p>
+  <ul>
+    <li><span class="code">COFY.read_eval('(fn (a b) (+ a b))')(1, 2)</span> =&gt; <span class="code">3</span><br>
+    Cofy fn called from JS</li>
+    <li><span class="code">COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2)</span> =&gt; <span class="code">3</span><br>
+    Cofy higher order fn called from JS</li>
+    <li><span class="code">COFY.read_eval('(fn (f) (f 1 2))')(function (a, b) { return a + b; })</span> =&gt; <span class="code">3</span><br>
+    creating a Cofy fn and passing it with a JS function</li>
+    <li><span class="code">COFY.read_eval('(fn (f a b) (f a b))')(function (a, b) { return a + b; }, 1, 2)</span> =&gt; <span class="code">3</span><br>
+    passing additional parameters used by the JS function</li>
+    <li><span class="code">COFY.read_eval('(fn (f) (fn (a b) (f a b)))')(function (a, b) { return a + b; })(1, 2)</span> =&gt; <span class="code">3</span><br>
+    just showing off</li>
+    <li><span class="code">COFY.read_eval('(fn (o) ((. o \'f) (. o "a")))')({ f: function (a) { return a + 1; }, a: 1 })</span> =&gt; <span class="code">2</span><br>
+    passing JS objects and calling its methods on its own property</li>
+    <li><span class="code">COFY.read_eval('(fn (o) o/a/b)')({ a: { b: 1 } })</span> =&gt; <span class="code">1</span><br>
+    object access syntax sugar</li>
+    <li><span class="code">COFY.read_eval('(fn (o) (o/f o/a))')({ f: function (a) { return a + 1; }, a: 1 })</span> =&gt; <span class="code">2</span><br>
+    method calls syntax sugar</li>
+    <li><span class="code">COFY.read_eval('(fn (a) ((. a 0) (. a 1)))')([function (a) { return a + 1; }, 1])</span> =&gt; <span class="code">2</span><br>
+    array access</li>
+    <li><span class="code">COFY.read_eval('(fn (o) o/1/b)')([ 0, { b: 1 } ])</span> =&gt; <span class="code">1</span><br>
+    array/object access syntax sugar</li>
+    <li><span class="code">COFY.read_eval('(fn (a) (a/0 a/1))')([function (a) { return a + 1; }, 1])</span> =&gt; <span class="code">2</span><br>
+    array access syntax sugar</li>
+    <li><span class="code">COFY.create({ o: { a: { b: 1 } }, c: [2, 'x'] }).read_eval('(+ o/a/b c/0)')</span> =&gt; <span class="code">3</span><br>
+    setting up the initial bindings from JS</li>
+    <li><span class="code">var obj1 = { field: 1 }, obj2 = COFY.read_eval('(fn (a) (set! a "field" 2) a)')(obj1);</span><br>
+    JS object side effects<br>
+    <span class="code">obj1.field</span> =&gt; <span class="code">2</span><br>
+    <span class="code">obj2.field</span> =&gt; <span class="code">2</span></li>
+    <li><span class="code">var arr1 = [0, 1], arr2 = COFY.read_eval('(fn (a) (set! a 1 2) a)')(arr1);</span><br>
+    JS array side effects<br>
+    <span class="code">arr1[1]</span> =&gt; <span class="code">2</span><br>
+    <span class="code">arr2[1]</span> =&gt; <span class="code">2</span></li>
+  </ul>
+
+  <p>Evaluation environment is capability-based. The evaluated code has access only
+  to features which are passed by the invoking code. However passing e.g. one specific DOM element gives access to the entire DOM, as there are public parent links in the element.</p>
+</body>
+</html>
+
