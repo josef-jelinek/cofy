@@ -78,8 +78,8 @@
   <a class="eval" href="#" onclick="return read_eval_print('input1', 'output1')">Evaluate</a>
   <div id="output1" class="output"><b>Output Window</b><br></div>
 
-  <p>The following script has been passed a 'document' object named 'page' thus it can make a changes to the entire web page.
-  It also shows the familiar 'setTimeout' function named 'schedule' in Cofy.</p>
+  <p>The following script has been passed a 'document' object (named 'page') thus it can make changes to the entire web page.
+  It also shows 'setTimeout' function named 'schedule' in Cofy.</p>
   <div class="editor"><textarea id="input2" rows=8>(set! page/body/style 'background "#DDF")
 
 (def id (schedule (fn () (set! page/body/style 'background "#FFD")) 500))
