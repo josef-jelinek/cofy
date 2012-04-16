@@ -57,13 +57,13 @@
     <li><span class="code">COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2)</span> =&gt; <span class="code">3</span><br>
     Cofy higher order fn called from JS</li>
     <li><span class="code">COFY.read_eval('(fn (f) (f 1 2))')(function (a, b) { return a + b; })</span> =&gt; <span class="code">3</span><br>
-    creating a Cofy fn and passing it with a JS function</li>
+    creating a Cofy fn and passing it a JS function</li>
     <li><span class="code">COFY.read_eval('(fn (f a b) (f a b))')(function (a, b) { return a + b; }, 1, 2)</span> =&gt; <span class="code">3</span><br>
     passing additional parameters used by the JS function</li>
     <li><span class="code">COFY.read_eval('(fn (f) (fn (a b) (f a b)))')(function (a, b) { return a + b; })(1, 2)</span> =&gt; <span class="code">3</span><br>
     just showing off</li>
     <li><span class="code">COFY.read_eval('(fn (o) ((. o \'f) (. o "a")))')({ f: function (a) { return a + 1; }, a: 1 })</span> =&gt; <span class="code">2</span><br>
-    passing JS objects and calling its methods on its own property</li>
+    passing a JS object and calling its methods on its property</li>
     <li><span class="code">COFY.read_eval('(fn (o) o/a/b)')({ a: { b: 1 } })</span> =&gt; <span class="code">1</span><br>
     object access syntax sugar</li>
     <li><span class="code">COFY.read_eval('(fn (o) (o/f o/a))')({ f: function (a) { return a + 1; }, a: 1 })</span> =&gt; <span class="code">2</span><br>
