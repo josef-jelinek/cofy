@@ -267,7 +267,7 @@ var COFY = (function (nil) {
       var i, primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do', 'use' ];
       var math_names = [
         'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow',
-        'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2'
+        'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
       ];
       for (i = 0; i < primitive_form_names.length; i++)
         builtins[primitive_form_names[i]] = nil;
@@ -294,8 +294,8 @@ var COFY = (function (nil) {
       'deref': function (x) { return x.value; },
       'swap!': swap,
       'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
-      '.apply': function (o, f, args) { return o[f].apply(o, list_to_array(args)); },
-      '.call': function (o, f) { return o[f].apply(o, Array.prototype.slice.call(arguments, 2)); },
+      '.apply': function (o, s, args) { return o[is_symbol(s) ? s.name : s].apply(o, list_to_array(args)); },
+      '.call': function (o, s) { return o[is_symbol(s) ? s.name : s].apply(o, Array.prototype.slice.call(arguments, 2)); },
       '+': function () { return sum.apply(null, arguments); },
       '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
       '*': function () { return product.apply(null, arguments); },
@@ -307,10 +307,9 @@ var COFY = (function (nil) {
       '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
       '=': function (a, b) { return equal(a, b); },
       'identical?': function (a, b) { return a === b; },
-      '.': function (o, field) { return is_symbol(field) ? o[field.name] : o[field]; },
-      'set!': function (o, field, value) { o[is_symbol(field) ? field.name : field] = value; },
+      '.': function (o, s) { return is_symbol(s) ? o[s.name] : o[s]; },
+      'set!': function (o, s, value) { o[is_symbol(s) ? s.name : s] = value; },
       'array': list_to_array,
-      'math': Math,
       'schedule': function(f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function(id) { return clearTimeout(id); }
     });
