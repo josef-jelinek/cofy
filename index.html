@@ -3,25 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Cofy - A Lisp Interpreter in JavaScript</title>
-  <style>
-    @font-face {
-      font-family: 'Anonymous Pro';
-      src: url('fonts/anonymouspro.eot') format('eot');
-      src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
-    }
-    html, body, ul, li { margin: 0; padding: 0; border: 0; }
-    body { font: italic 14pt/1.6 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
-    h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
-    p { margin: 10px 0; }
-    a { color: #361; text-decoration: none; }
-    a:hover { color: #481; text-decoration: underline; }
-    ul { list-style: none; }
-    li { padding-left: 30px; background: url(img/lambdot.png) 0 50% no-repeat; }
-    .footnote { margin-top: 40px; font-size: 88%; }
-  </style>
+  <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body>
-  <div id="logo"><img src="img/cofy-logo-o.png" width=180 height=77></div>
+  <div id="logo"><a href="/"><img src="img/cofy-logo-o.png" width=180 height=77></a></div>
   <h1>A Lisp language for a browser.</h1>
   <p>The purpose of this project is to allow executing dynamically generated or loaded code
   inside a web browser with capability based security.</p>
