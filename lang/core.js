@@ -264,15 +264,22 @@ var COFY = (function (nil) {
     };
 
     var complete_builtins = function (builtins) {
-      var i, primitive_form_names = [ 'quote', 'fn', 'if', 'def', 'do', 'use' ];
-      var math_names = [
-        'abs', 'min', 'max', 'random', 'round', 'floor', 'ceil', 'sqrt', 'pow',
-        'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'PI', 'E'
+      var i, primitive_form_names = ['quote', 'fn', 'if', 'def', 'do', 'use'];
+      var math_names_1 = [
+        'abs', 'random', 'round', 'floor', 'ceil', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan'
       ];
+      var math_names_2 = ['pow', 'atan2', 'PI', 'E'];
+      var math_names_n = ['min', 'max'];
       for (i = 0; i < primitive_form_names.length; i++)
         builtins[primitive_form_names[i]] = nil;
-      for (i = 0; i < math_names.length; i++)
-        builtins[math_names[i]] = Math[math_names[i]];
+      for (i = 0; i < math_names_1.length; i++)
+        builtins[math_names_1[i]] = (function (fn) { return function (a) { return fn(a); } }(Math[math_names_1[i]]));
+      for (i = 0; i < math_names_2.length; i++)
+        builtins[math_names_2[i]] = (function (fn) { return function (a, b) { return fn(a, b); } }(Math[math_names_2[i]]));
+      for (i = 0; i < math_names_n.length; i++)
+        builtins[math_names_n[i]] = (function (fn) { return function () { return fn.apply(null, arguments); } }(Math[math_names_n[i]]));
+      builtins['pi'] = Math.PI;
+      builtins['e'] = Math.E;
       freeze_object(builtins);
       return builtins;
     };
