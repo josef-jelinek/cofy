@@ -111,12 +111,13 @@
             this.isSame(COFY.read_eval('(* 1 2 3 4)'), 24);
             this.isSame(COFY.read_eval('(/ 6 3)'), 2);
             this.isSame(COFY.read_eval('(/ 5 2)'), 2.5);
-            this.isSame(COFY.read_eval('PI'), Math.PI);
+            this.isSame(COFY.read_eval('pi'), Math.PI);
+            this.isSame(COFY.read_eval('e'), Math.E);
             this.isSame(COFY.read_eval('(abs 1)'), 1);
             this.isSame(COFY.read_eval('(abs -1)'), 1);
             this.isSame(COFY.read_eval('(min 2 1 3)'), 1);
             this.isSame(COFY.read_eval('(max 2 1 3)'), 3);
-            this.isSame(COFY.read_eval('random'), Math.random);
+            this.isTrue(COFY.read_eval('random') !== Math.random);
             this.isSame(COFY.read_eval('(round 1.6)'), 2);
             this.isSame(COFY.read_eval('(floor 1.6)'), 1);
             this.isSame(COFY.read_eval('(ceil 1.4)'), 2);
@@ -140,6 +141,10 @@
             this.isTrue(COFY.read_eval('(>= 3 2 1)'));
             this.isTrue(COFY.read_eval('(>= 2 2 1)'));
             this.isFalse(COFY.read_eval('(>= 1 2 1)'));
+          },
+          math_security: function () {
+            COFY.read_eval('(set! sin "call" 0)');
+            this.isFalse(Math.sin.call === 0);
           },
           definitions: function () {
             var cofy = COFY.create();
