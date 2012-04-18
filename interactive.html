@@ -34,18 +34,18 @@
     .output em { color: #C00; }
     .eval {
       display: inline-block;
-      height: 26px;
+      height: 22px;
       margin: 15px;
       padding: 0 20px;
       text-align: center;
       background: #FFC;
       color: #420;
-      border: 2px outset #DD9;
-      border-radius: 15px;
-      font: bold italic 20px/26px 'Anonymous Pro', monospace;
+      border: 1px outset #DD9;
+      border-radius: 7px;
+      font: normal 16px/22px 'Anonymous Pro', monospace;
       text-decoration: none;
     }
-    .eval:hover { background: #FFB; }
+    .eval:hover { background: #FFB; text-decoration: none; color: #210; }
     .eval:active { background: #FFB; border-style: inset; }
     .eval:focus { outline: none; }
     canvas { display: block; margin: 10px auto; width: 200px; height: 200px; background: #FFF; border: 1px solid #DDD; }
@@ -72,7 +72,7 @@
   It also shows 'setTimeout' function named 'schedule' in Cofy.</p>
   <div class="editor"><textarea id="input2" rows=8>(set! page/body/style 'background "#DDF")
 
-(def id (schedule (fn () (set! page/body/style 'background "#FFD")) 500))
+(def id (schedule (fn () (set! page/body/style 'background ())) 500))
 
 (cons id page/body/style/background)</textarea></div>
   <a class="eval" href="#" onclick="return read_eval_print('input2', 'output2', { page: document })">Evaluate</a>

@@ -4,7 +4,8 @@
   src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
 }
 html, body, ul, li { margin: 0; padding: 0; border: 0; }
-body { font: italic 12pt/1.5 'Anonymous Pro', monospace; background: #FFD; color: #420; padding: 50px; }
+html { background: #FFD url(img/bg.png); }
+body { font: italic 12pt/1.5 'Anonymous Pro', monospace; color: #420; padding: 50px; }
 h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
 p { margin: 10px 0; }
 a { color: #361; text-decoration: none; }
