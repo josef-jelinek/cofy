@@ -256,7 +256,13 @@ var COFY = (function (nil) {
     var greater_than = function (a, b) { return a > b; }
     var lower_than_or_equal = function (a, b) { return a <= b; }
     var greater_than_or_equal = function (a, b) { return a >= b; }
-
+    var set_value = function (o, s, value) {
+      if (is_var(o)) {
+        o.value = s;
+      } else {
+        o[is_symbol(s) ? s.name : s] = value;
+      }
+    }
     var add_bindings = function (env, bindings) {
       for (var key in bindings)
         if (object_has_own_property(bindings, key))
@@ -315,7 +321,7 @@ var COFY = (function (nil) {
       '=': function (a, b) { return equal(a, b); },
       'identical?': function (a, b) { return a === b; },
       '.': function (o, s) { return is_symbol(s) ? o[s.name] : o[s]; },
-      'set!': function (o, s, value) { o[is_symbol(s) ? s.name : s] = value; },
+      'set!': set_value,
       'array': list_to_array,
       'schedule': function(f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function(id) { return clearTimeout(id); }
