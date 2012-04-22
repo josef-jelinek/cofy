@@ -245,24 +245,42 @@ var COFY = (function (nil) {
     };
 
     var check_array_pairs = function (array, test_adjacent) {
-      var i;
-      for (i = 1; i < array.length; i++)
+      for (var i = 1; i < array.length; i++)
         if (!test_adjacent(array[i - 1], array[i]))
           return false;
       return true;
     };
 
-    var lower_than = function (a, b) { return a < b; }
-    var greater_than = function (a, b) { return a > b; }
-    var lower_than_or_equal = function (a, b) { return a <= b; }
-    var greater_than_or_equal = function (a, b) { return a >= b; }
+    var array_to_list = function (values, rest) {
+      var i;
+      if (rest === nil)
+        rest = null;
+      for (i = values.length - 1; i >= 0; i--)
+        rest = Cons(values[i], rest);
+      return rest;
+    };
+
+    var lower_than = function (a, b) { return a < b; };
+    var greater_than = function (a, b) { return a > b; };
+    var lower_than_or_equal = function (a, b) { return a <= b; };
+    var greater_than_or_equal = function (a, b) { return a >= b; };
+
+    var filter = function (fn, list) {
+      var values = [], rest;
+      for (rest = list; is_cons(rest); rest = rest.tail)
+        if (fn(rest.head) !== false)
+          values.push(rest.head);
+      return array_to_list(values, rest === null || fn(rest) === false ? null : rest);
+    };
+
     var set_value = function (o, s, value) {
       if (is_var(o)) {
         o.value = s;
       } else {
         o[is_symbol(s) ? s.name : s] = value;
       }
-    }
+    };
+
     var add_bindings = function (env, bindings) {
       for (var key in bindings)
         if (object_has_own_property(bindings, key))
@@ -323,8 +341,9 @@ var COFY = (function (nil) {
       '.': function (o, s) { return is_symbol(s) ? o[s.name] : o[s]; },
       'set!': set_value,
       'array': list_to_array,
-      'schedule': function(f, ms) { return setTimeout(f, ms || 0); },
-      'unschedule': function(id) { return clearTimeout(id); }
+      'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
+      'unschedule': function (id) { return clearTimeout(id); },
+      'filter': filter
     });
 
     return function (external) {

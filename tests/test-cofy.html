@@ -201,6 +201,20 @@
             this.isNull(COFY.read_eval('(apply (fn args args))'));
             this.throwsError(function () { COFY.read_eval('(apply)'); });
           },
+          filter: function () {
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) true) ()) ())"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) false) ()) ())"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 2 3)) '(1 2 3))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) false) '(1 2 3)) ())"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 2 0 3)) '(2 3))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 : 2)) '(1 : 2))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 : 2)) 2)"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(2 : 1)) '(2))"));
+          },
+          map: function () {
+          },
+          reduce: function () {
+          },
           function_interop: function () {
             this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);
             this.isSame(COFY.read_eval('(fn (a) (fn (b) (+ a b)))')(1)(2), 3);
