@@ -231,21 +231,21 @@ var COFY = (function (nil) {
     };
 
     var sum = function () {
-      var i, sum = 0;
-      for (i = 0; i < arguments.length; i++)
+      var i, len = arguments.length, sum = 0;
+      for (i = 0; i < len; i++)
         sum += arguments[i];
       return sum;
     };
 
     var product = function () {
-      var i, product = 1;
-      for (i = 0; i < arguments.length && product !== 0; i++)
+      var i, len = arguments.length, product = 1;
+      for (i = 0; i < len && product !== 0; i++)
         product *= arguments[i];
       return product;
     };
 
     var check_array_pairs = function (array, test_adjacent) {
-      for (var i = 1; i < array.length; i++)
+      for (var i = 1, len = array.length; i < len; i++)
         if (!test_adjacent(array[i - 1], array[i]))
           return false;
       return true;
@@ -265,12 +265,52 @@ var COFY = (function (nil) {
     var lower_than_or_equal = function (a, b) { return a <= b; };
     var greater_than_or_equal = function (a, b) { return a >= b; };
 
-    var filter = function (fn, list) {
+    var filter_list = function (fn, list) {
       var values = [], rest;
       for (rest = list; is_cons(rest); rest = rest.tail)
         if (fn(rest.head) !== false)
           values.push(rest.head);
       return array_to_list(values, rest === null || fn(rest) === false ? null : rest);
+    };
+
+    var map_list = function (fn, list) {
+      var values = [], rest;
+      for (rest = list; is_cons(rest); rest = rest.tail)
+        values.push(fn(rest.head));
+      return array_to_list(values, rest === null ? null : fn(rest));
+    };
+
+    var nulls_in = function (values) {
+      for (var i = 0, len = values.length; i < len; i++)
+        if (values[i] === null)
+          return true;
+      return false;
+    };
+
+    var are_cons = function (values) {
+      for (var i = 0, len = values.length; i < len; i++)
+        if (!is_cons(values[i]))
+          return false;
+      return true;
+    };
+
+    var set_tails = function (values) {
+      for (var i = 0, len = values.length; i < len; i++)
+        values[i] = values[i].tail;
+    };
+
+    var get_heads = function (values) {
+      var i, len = values.length, heads = Array(len);
+      for (i = 0; i < len; i++)
+        heads[i] = values[i].head;
+      return heads;
+    };
+
+    var map_list_n = function (fn) {
+      var values = [], args;
+      for (args = Array.prototype.slice.call(arguments, 1); are_cons(args); set_tails(args))
+        values.push(fn.apply(null, get_heads(args)));
+      return array_to_list(values, nulls_in(args) ? null : fn.apply(null, args));
     };
 
     var set_value = function (o, s, value) {
@@ -310,6 +350,7 @@ var COFY = (function (nil) {
 
     var builtins = complete_builtins({
       'nil': nil,
+      'nan': 0/0,
       'nil?': function (x) { return x === nil; },
       'true': true,
       'false': false,
@@ -320,6 +361,7 @@ var COFY = (function (nil) {
       'cons?': is_cons,
       'first': function (x) { return x.head; },
       'rest': function (x) { return x.tail; },
+      'list': function () { return array_to_list(arguments); },
       'var': Var,
       'var?': is_var,
       'deref': function (x) { return x.value; },
@@ -343,7 +385,8 @@ var COFY = (function (nil) {
       'array': list_to_array,
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
-      'filter': filter
+      'filter': filter_list,
+      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : map_list_n.apply(null, arguments); }
     });
 
     return function (external) {

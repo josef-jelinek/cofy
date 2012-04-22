@@ -77,6 +77,7 @@
             this.isFalse(COFY.read_eval('false'));
             this.isUndefined(COFY.read_eval('nil'));
             this.isSame(COFY.read_eval("'hello"), COFY.read_eval("'hello"));
+            this.isTrue(COFY.read_eval("(= (list 1 2 3) '(1 2 3))"));
           },
           identity: function () {
             this.isTrue(COFY.read_eval('(identical? 0 0)'));
@@ -212,6 +213,15 @@
             this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(2 : 1)) '(2))"));
           },
           map: function () {
+            this.isSame(COFY.read_eval("(map (fn () 1))"), 1);
+            this.isTrue(COFY.read_eval("(= (map (fn (a) 1) ()) ())"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a) a) '(1 2 3)) '(1 2 3))"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 3)) '(11 12 13))"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 : 3)) '(11 12 : 13))"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a b) (+ a b)) '(1 2 3) '(5 6 7)) '(6 8 10))"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a b) (+ a b)) '(1 2 3) '(5 6)) '(6 8))"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a b) (+ a b)) '(1 2 : 3) '(5 6)) '(6 8))"));
+            this.isTrue(COFY.read_eval("(= (map (fn (a b) (+ a b)) '(1 2 : 3) '(5 6 : 7)) '(6 8 : 10))"));
           },
           reduce: function () {
           },
