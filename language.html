@@ -42,6 +42,7 @@
   <ul>
     <li><span class="code">nil</span> - JavaScript undefined</li>
     <li><span class="code">nil?</span> - one-parameter function testing the parameter for <em>nil</em></li>
+    <li><span class="code">nan</span> - JavaScript NaN</li>
     <li><span class="code">true</span> - JavaScript true</li>
     <li><span class="code">false</span> - JavaScript false</li>
     <li><span class="code">string?</span> - one-parameter function testing the parameter for string</li>
@@ -51,11 +52,14 @@
     <li><span class="code">cons?</span> - one-parameter function testing the parameter for list (or rather a cons cell that is a list building block)</li>
     <li><span class="code">first</span> - one-parameter function taking a list and returning its first item</li>
     <li><span class="code">rest</span> - one-parameter function taking a list and returning it without its first item</li>
+    <li><span class="code">list</span> - function taking any number of arguments and returning a list of them</li>
     <li><span class="code">var</span> - one-parameter function that creates a variable</li>
     <li><span class="code">var?</span> - one-parameter function testing the parameter for variable</li>
     <li><span class="code">deref</span> - one-parameter function that extracts a value from a variable</li>
     <li><span class="code">swap!</span> - function that takes a variable and a value and assigns the value to the variable and returns the old value</li>
     <li><span class="code">apply</span> - takes a function and a list, and applies the function to the items of the list</li>
+    <li><span class="code">filter</span> - takes a function and a list, and applies the function to the items of the list returning a list of items for which the function returned true</li>
+    <li><span class="code">map</span> - takes a function and a list, and applies the function to the items of the list returning a new list of the results (accepts more lists in which case it applies the function to all corresponding items)</li>
     <li><span class="code">+ *</span> - sum and multiplication functions taking any number of parameters</li>
     <li><span class="code">-</span> - one-parameter negation or two-parameter subtract function</li>
     <li><span class="code">/</span> - two-parameter division functions</li>

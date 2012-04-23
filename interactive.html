@@ -55,16 +55,16 @@
   <div id="logo"><a href="/"><img src="img/cofy-logo-o.png" width=180 height=77></a></div>
   <h1>Code Examples</h1>
 
-  <p>A recursive function 'map' takes a function and a list. It traverses the list and returns a new list.
+  <p>A recursive function 'my-map' takes a function and a list. It traverses the list and returns a new list.
   Each element in the new list is a result of applying the function to the corresponding element of the original list.</p>
   <div class="editor"><textarea id="input1" rows=8>;; map function example
 (def (inc n) (+ n 1))
-(def (map f x)
+(def (my-map f x)
      (if (= x ()) ()
                   (cons (f (first x))
-                        (map f (rest x)))))
+                        (my-map f (rest x)))))
 
-(map inc '(1 2 3))</textarea></div>
+(my-map inc '(1 2 3))</textarea></div>
   <a class="eval" href="#" onclick="return read_eval_print('input1', 'output1')">Evaluate</a>
   <div id="output1" class="output"><b>Output Window</b><br></div>
 
