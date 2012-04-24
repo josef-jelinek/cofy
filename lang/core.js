@@ -11,7 +11,7 @@ var COFY = (function (nil) {
     throw { name: 'RuntimeError', message: message || 'An error' };
   };
   // utilizing ES5 functions if available for immutability
-  var create_object_from_prototype = Object.create || function (o) {
+  var derive_from = Object.create || function (o) {
     function F() {}
     F.prototype = o || Object.prototype;
     return new F();
@@ -90,6 +90,7 @@ var COFY = (function (nil) {
   var is_null = function (x) { return x === null; };
   var is_nil = function (x) { return x === nil; };
   var is_nan = function (x) { return x !== nil && isNaN(x); };
+  var is_falsy = function (x) { return x === false || x === null || x === nil; };
 
   // recursive descent parser
   var parse = (function () {
@@ -148,7 +149,7 @@ var COFY = (function (nil) {
     var remove_comments = function (tokens) {
       var filtered = [], count = tokens.length;
       for (var i = 0; i < count; i++)
-        if (tokens[i].charAt(0) != ';')
+        if (tokens[i].charAt(0) !== ';')
           filtered.push(tokens[i]);
       return filtered;
     };
@@ -223,6 +224,20 @@ var COFY = (function (nil) {
       return values;
     };
 
+    var any = function (fn, values) {
+      for (var i = 0, len = values.length; i < len; i++)
+        if (!is_falsy(fn(values[i])))
+          return true;
+      return false;
+    };
+
+    var all = function (fn, values) {
+      for (var i = 0, len = values.length; i < len; i++)
+        if (is_falsy(fn(values[i])))
+          return false;
+      return true;
+    };
+
     var swap = function (variable, value) {
       var v = variable.value;
       variable.value = value;
@@ -268,35 +283,6 @@ var COFY = (function (nil) {
     var lower_than_or_equal = function (a, b) { return a <= b; };
     var greater_than_or_equal = function (a, b) { return a >= b; };
 
-    var filter_list = function (fn, list) {
-      var values = [], rest;
-      for (rest = list; is_cons(rest); rest = rest.tail)
-        if (fn(rest.head) !== false)
-          values.push(rest.head);
-      return array_to_list(values, rest === null || fn(rest) === false ? null : rest);
-    };
-
-    var map_list = function (fn, list) {
-      var values = [], rest;
-      for (rest = list; is_cons(rest); rest = rest.tail)
-        values.push(fn(rest.head));
-      return array_to_list(values, rest === null ? null : fn(rest));
-    };
-
-    var any = function (fn, values) {
-      for (var i = 0, len = values.length; i < len; i++)
-        if (fn(values[i]))
-          return true;
-      return false;
-    };
-
-    var all = function (fn, values) {
-      for (var i = 0, len = values.length; i < len; i++)
-        if (!fn(values[i]))
-          return false;
-      return true;
-    };
-
     var set_tails = function (values) {
       for (var i = 0, len = values.length; i < len; i++)
         values[i] = values[i].tail;
@@ -307,6 +293,25 @@ var COFY = (function (nil) {
       for (i = 0; i < len; i++)
         heads[i] = values[i].head;
       return heads;
+    };
+
+    var filter_list = function (fn) {
+      var i, len = arguments.length, values = [], rest = null;
+      for (i = 1; i < len; i++) {
+        if (rest !== null && !is_falsy(fn(rest)))
+          values.push(rest);
+        for (rest = arguments[i]; is_cons(rest); rest = rest.tail)
+          if (!is_falsy(fn(rest.head)))
+            values.push(rest.head);
+      }
+      return array_to_list(values, rest === null || is_falsy(fn(rest)) ? null : rest);
+    };
+
+    var map_list = function (fn, list) {
+      var values = [], rest;
+      for (rest = list; is_cons(rest); rest = rest.tail)
+        values.push(fn(rest.head));
+      return array_to_list(values, rest === null ? null : fn(rest));
     };
 
     var map_list_n = function (fn) {
@@ -332,19 +337,16 @@ var COFY = (function (nil) {
 
     var complete_builtins = function (builtins) {
       var i, primitive_form_names = ['quote', 'fn', 'if', 'def', 'do', 'use'];
-      var math_names_1 = [
-        'abs', 'random', 'round', 'floor', 'ceil', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan'
-      ];
-      var math_names_2 = ['pow', 'atan2', 'PI', 'E'];
-      var math_names_n = ['min', 'max'];
+      var math_names = ['abs', 'round', 'floor', 'ceil', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan'];
       for (i = 0; i < primitive_form_names.length; i++)
         builtins[primitive_form_names[i]] = nil;
-      for (i = 0; i < math_names_1.length; i++)
-        builtins[math_names_1[i]] = (function (fn) { return function (a) { return fn(a); } }(Math[math_names_1[i]]));
-      for (i = 0; i < math_names_2.length; i++)
-        builtins[math_names_2[i]] = (function (fn) { return function (a, b) { return fn(a, b); } }(Math[math_names_2[i]]));
-      for (i = 0; i < math_names_n.length; i++)
-        builtins[math_names_n[i]] = (function (fn) { return function () { return fn.apply(null, arguments); } }(Math[math_names_n[i]]));
+      for (i = 0; i < math_names.length; i++)
+        builtins[math_names[i]] = (function (fn) { return function (a) { return fn(a); } }(Math[math_names[i]]));
+      builtins['pow'] = function (a, b) { return Math.pow(a, b); };
+      builtins['atan2'] = function (a, b) { return Math.atan(a, b); };
+      builtins['min'] = function () { return Math.min.apply(null, arguments); };
+      builtins['max'] = function () { return Math.max.apply(null, arguments); };
+      builtins['random'] = function () { return Math.random(); };
       builtins['pi'] = Math.PI;
       builtins['e'] = Math.E;
       freeze_object(builtins);
@@ -481,7 +483,7 @@ var COFY = (function (nil) {
     };
 
     var bind_args = function (names, values, parent_env) {
-      var i = 0, rest, env = create_object_from_prototype(parent_env);
+      var i = 0, rest, env = derive_from(parent_env);
       for (rest = names; is_cons(rest); rest = rest.tail)
         define_frozen_property(env, rest.head.name, i < values.length ? values[i++] : nil);
       if (rest)
