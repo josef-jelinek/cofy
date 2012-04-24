@@ -87,6 +87,9 @@ var COFY = (function (nil) {
   } || function (x) {
     return typeof x === 'function' || x !== null && typeof x === 'object' && 'call' in x;
   };
+  var is_null = function (x) { return x === null; };
+  var is_nil = function (x) { return x === nil; };
+  var is_nan = function (x) { return x !== nil && isNaN(x); };
 
   // recursive descent parser
   var parse = (function () {
@@ -280,16 +283,16 @@ var COFY = (function (nil) {
       return array_to_list(values, rest === null ? null : fn(rest));
     };
 
-    var nulls_in = function (values) {
+    var any = function (fn, values) {
       for (var i = 0, len = values.length; i < len; i++)
-        if (values[i] === null)
+        if (fn(values[i]))
           return true;
       return false;
     };
 
-    var are_cons = function (values) {
+    var all = function (fn, values) {
       for (var i = 0, len = values.length; i < len; i++)
-        if (!is_cons(values[i]))
+        if (!fn(values[i]))
           return false;
       return true;
     };
@@ -308,9 +311,9 @@ var COFY = (function (nil) {
 
     var map_list_n = function (fn) {
       var values = [], args;
-      for (args = Array.prototype.slice.call(arguments, 1); are_cons(args); set_tails(args))
+      for (args = Array.prototype.slice.call(arguments, 1); all(is_cons, args); set_tails(args))
         values.push(fn.apply(null, get_heads(args)));
-      return array_to_list(values, nulls_in(args) ? null : fn.apply(null, args));
+      return array_to_list(values, any(is_null, args) ? null : fn.apply(null, args));
     };
 
     var set_value = function (o, s, value) {
@@ -350,8 +353,9 @@ var COFY = (function (nil) {
 
     var builtins = complete_builtins({
       'nil': nil,
+      'nil?': is_nil,
       'nan': 0/0,
-      'nil?': function (x) { return x === nil; },
+      'nan?': is_nan,
       'true': true,
       'false': false,
       'string?': is_string,

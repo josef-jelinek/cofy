@@ -76,6 +76,11 @@
             this.isTrue(COFY.read_eval('true'));
             this.isFalse(COFY.read_eval('false'));
             this.isUndefined(COFY.read_eval('nil'));
+            this.isTrue(COFY.read_eval('(nil? nil)'));
+            this.isFalse(COFY.read_eval('(nil? ())'));
+            this.isTrue(COFY.read_eval('(nan? nan)'));
+            this.isFalse(COFY.read_eval('(nan? 0)'));
+            this.isFalse(COFY.read_eval('(nan? nil)'));
             this.isSame(COFY.read_eval("'hello"), COFY.read_eval("'hello"));
             this.isTrue(COFY.read_eval("(= (list 1 2 3) '(1 2 3))"));
           },
@@ -203,18 +208,18 @@
             this.throwsError(function () { COFY.read_eval('(apply)'); });
           },
           filter: function () {
-            this.isTrue(COFY.read_eval("(= (filter (fn (a) true) ()) ())"));
-            this.isTrue(COFY.read_eval("(= (filter (fn (a) false) ()) ())"));
+            this.isNull(COFY.read_eval("(filter (fn (a) true) ())"));
+            this.isNull(COFY.read_eval("(filter (fn (a) false) ())"));
             this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 2 3)) '(1 2 3))"));
-            this.isTrue(COFY.read_eval("(= (filter (fn (a) false) '(1 2 3)) ())"));
+            this.isNull(COFY.read_eval("(filter (fn (a) false) '(1 2 3))"));
             this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 2 0 3)) '(2 3))"));
             this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 : 2)) '(1 : 2))"));
-            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 : 2)) 2)"));
+            this.isSame(COFY.read_eval("(filter (fn (a) (> a 1)) '(1 : 2))"), 2);
             this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(2 : 1)) '(2))"));
           },
           map: function () {
             this.isSame(COFY.read_eval("(map (fn () 1))"), 1);
-            this.isTrue(COFY.read_eval("(= (map (fn (a) 1) ()) ())"));
+            this.isNull(COFY.read_eval("(map (fn (a) 1) ())"));
             this.isTrue(COFY.read_eval("(= (map (fn (a) a) '(1 2 3)) '(1 2 3))"));
             this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 3)) '(11 12 13))"));
             this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 : 3)) '(11 12 : 13))"));
