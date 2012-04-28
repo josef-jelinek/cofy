@@ -226,9 +226,11 @@
             this.isNull(COFY.read_eval("(filter (fn (a) false))"));
             this.isNull(COFY.read_eval("(filter (fn (a) false) 1 2 3)"));
             this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 2) '(0 3)) '(2 3))"));
-            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 : 2) '(0 : 3)) '(2 : 3))"));
-            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) 1 2 0 3) '(2 : 3))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 2) '(3 0)) '(3 2))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 : 2) '(0 : 3)) '(2 3))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) 1 2 0 3) '(2 3))"));
             this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1) '(2) '(0) '(3)) '(2 3))"));
+            this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 5 : 8) '(2 6) '(3 : 7) '(4)) '(1 2 3 4 5 6 7 8))"));
           },
           map: function () {
             this.isNull(COFY.read_eval("(map (fn (a) 1) ())"));
@@ -244,8 +246,14 @@
             this.isTrue(COFY.read_eval("(= (map + '(1 2 : 3) '(5 6)) '(6 8))"));
             this.isTrue(COFY.read_eval("(= (map + '(1 2 : 3) '(5 6 : 7)) '(6 8 : 10))"));
             this.isTrue(COFY.read_eval("(= (map list 1 2 3) '(1 2 3))"));
+            this.isTrue(COFY.read_eval("(= (map list 1 '(2) '((3))) '(1 (2) ((3))))"));
           },
           reduce: function () {
+            this.isUndefined(COFY.read_eval("(reduce (fn x 13))"));
+            this.isSame(COFY.read_eval("(reduce (fn x 13) 10)"), 10);
+            this.isSame(COFY.read_eval("(reduce (fn x 13) 10 ())"), 10);
+            this.isSame(COFY.read_eval("(reduce (fn x 13) 10 '(1))"), 13);
+            this.isSame(COFY.read_eval("(reduce + 10 '(1 2))"), 13);
           },
           function_interop: function () {
             this.isSame(COFY.read_eval('(fn (a b) (+ a b))')(1, 2), 3);

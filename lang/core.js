@@ -88,8 +88,10 @@ var COFY = (function (nil) {
     return typeof x === 'function' || x !== null && typeof x === 'object' && 'call' in x;
   };
   var is_null = function (x) { return x === null; };
+  var is_not_null = function (x) { return x !== null; };
   var is_nil = function (x) { return x === nil; };
   var is_nan = function (x) { return x !== nil && isNaN(x); };
+  var is_truthy = function (x) { return x !== false && x !== null && x !== nil; };
   var is_falsy = function (x) { return x === false || x === null || x === nil; };
 
   // recursive descent parser
@@ -285,7 +287,7 @@ var COFY = (function (nil) {
 
     var set_tails = function (values) {
       for (var i = 0, len = values.length; i < len; i++)
-        values[i] = values[i].tail;
+        values[i] = is_cons(values[i]) ? values[i].tail : null;
     };
 
     var get_heads = function (values) {
@@ -295,16 +297,28 @@ var COFY = (function (nil) {
       return heads;
     };
 
-    var filter_list = function (fn) {
-      var i, len = arguments.length, values = [], rest = null;
-      for (i = 1; i < len; i++) {
-        if (rest !== null && !is_falsy(fn(rest)))
-          values.push(rest);
-        for (rest = arguments[i]; is_cons(rest); rest = rest.tail)
-          if (!is_falsy(fn(rest.head)))
-            values.push(rest.head);
-      }
+    var filter_list = function (fn, list) {
+      var values = [], rest;
+      for (rest = list; is_cons(rest); rest = rest.tail)
+        if (is_truthy(fn(rest.head)))
+          values.push(rest.head);
       return array_to_list(values, rest === null || is_falsy(fn(rest)) ? null : rest);
+    };
+
+    var filter_list_n = function (fn) {
+      var i, len = arguments.length - 1, values = [], args, x;
+      for (args = Array.prototype.slice.call(arguments, 1); any(is_not_null, args); set_tails(args)) {
+        for (i = 0; i < len; i++) {
+          x = args[i];
+          if (is_cons(x)) {
+            if (is_truthy(fn(x.head)))
+              values.push(x.head);
+          } else if (x !== null && is_truthy(fn(x))) {
+            values.push(x);
+          }
+        }
+      }
+      return array_to_list(values);
     };
 
     var map_list = function (fn, list) {
@@ -319,6 +333,12 @@ var COFY = (function (nil) {
       for (args = Array.prototype.slice.call(arguments, 1); all(is_cons, args); set_tails(args))
         values.push(fn.apply(null, get_heads(args)));
       return array_to_list(values, any(is_null, args) ? null : fn.apply(null, args));
+    };
+
+    var reduce_list = function (fn, value, list) {
+      for (var rest = list; is_cons(rest); rest = rest.tail)
+        value = fn(value, rest.head);
+      return rest === null || list === nil ? value : fn(value, rest);
     };
 
     var set_value = function (o, s, value) {
@@ -391,8 +411,9 @@ var COFY = (function (nil) {
       'array': list_to_array,
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
-      'filter': filter_list,
-      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : map_list_n.apply(null, arguments); }
+      'filter': function (fn, list) { return arguments.length <= 2 ? filter_list(fn, list) : filter_list_n.apply(null, arguments); },
+      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : map_list_n.apply(null, arguments); },
+      'reduce': reduce_list
     });
 
     return function (external) {
