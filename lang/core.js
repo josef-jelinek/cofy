@@ -59,22 +59,17 @@ var COFY = (function (nil) {
   var LazySeq = function (fn) {
     if (!is_lazy_seq(this))
       return new LazySeq(fn);
-    var cons = null;
-    var compute = function () {
-      if (cons === null)
-        cons = Cons(fn(), LazySeq(fn));
+    var value, computed = false, compute = function () {
+      if (!computed) {
+        value = fn();
+        computed = true;
+      }
+      return value;
     };
-    this.head = function () {
-      compute();
-      return cons.head;
-    };
-    this.tail = function () {
-      compute();
-      return cons.tail;
-    };
-    this.realized = function () {
-      return cons !== null;
-    };
+    this.value = function () { return compute(); };
+    this.head = function () { return compute().head; };
+    this.tail = function () { return compute().tail; };
+    this.realized = function () { return computed; };
     freeze_object(this);
   };
 
@@ -104,6 +99,7 @@ var COFY = (function (nil) {
   var is_symbol = function(x) { return x instanceof Symbol; };
   var is_cons = function(x) { return x instanceof Cons; };
   var is_lazy_seq = function(x) { return x instanceof LazySeq; };
+  var is_seq = function(x) { return is_cons(x) || is_lazy_seq(x); };
   var is_var = function(x) { return x instanceof Var; };
   var is_syntax = function(x) { return x instanceof Syntax; };
   // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
@@ -427,8 +423,11 @@ var COFY = (function (nil) {
       'cons?': is_cons,
       'lazy-seq': LazySeq,
       'lazy-seq?': is_lazy_seq,
-      'first': function (x) { return is_cons(x) ? x.head : x.head(); },
-      'rest': function (x) { return is_cons(x) ? x.tail : x.tail(); },
+      'seq?': is_seq,
+      'empty?': function (x) { return x === null || is_lazy_seq(x) && x.value() === null; },
+      'realized?': function (x) { return is_lazy_seq(x) && x.realized(); },
+      'first': function (x) { return is_cons(x) ? x.head : is_seq ? x.head() : nil; },
+      'rest': function (x) { return is_cons(x) ? x.tail : is_seq ? x.tail() : nil; },
       'list': function () { return array_to_list(arguments); },
       'var': Var,
       'var?': is_var,

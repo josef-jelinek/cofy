@@ -332,7 +332,8 @@
           lazy_seq: function () {
             var val = 0;
             var cofy = COFY.create({ 'do-stuff': function () { return val += 1; }});
-            cofy.read_eval('(def stream (lazy-seq do-stuff))');
+            cofy.read_eval('(def (consfn) (cons (do-stuff) (lazy-seq consfn)))');
+            cofy.read_eval('(def stream (lazy-seq consfn))');
             this.isSame(val, 0);
             this.isSame(cofy.read_eval('(first stream)'), 1);
             this.isSame(cofy.read_eval('(first stream)'), 1);
@@ -343,6 +344,15 @@
             this.isSame(cofy.read_eval('(first (rest stream))'), 2);
             this.isSame(val, 2);
             this.isSame(cofy.read_eval('(first stream)'), 1);
+            this.isTrue(cofy.read_eval('(realized? stream)'));
+            this.isTrue(cofy.read_eval('(realized? (rest stream))'));
+            this.isFalse(cofy.read_eval('(realized? (rest (rest stream)))'));
+            this.isFalse(cofy.read_eval('(empty? (rest (rest stream)))'));
+            this.isTrue(cofy.read_eval('(realized? (rest (rest stream)))'));
+            this.isTrue(cofy.read_eval('(empty? (lazy-seq (fn () ())))'));
+            this.isFalse(cofy.read_eval('(empty? (lazy-seq (fn () 0)))'));
+            this.isFalse(cofy.read_eval("(empty? (lazy-seq (fn () '(0))))"));
+            this.isTrue(cofy.read_eval("(empty? (rest (lazy-seq (fn () '(0)))))"));
           },
           macros: function () {
             var cofy = COFY.create();
