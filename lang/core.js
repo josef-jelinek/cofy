@@ -274,14 +274,14 @@ var COFY = (function (nil) {
     var sum = function () {
       var i, len = arguments.length, sum = 0;
       for (i = 0; i < len; i++)
-        sum += arguments[i];
+        sum += +arguments[i];
       return sum;
     };
 
     var product = function () {
       var i, len = arguments.length, product = 1;
       for (i = 0; i < len && product !== 0; i++)
-        product *= arguments[i];
+        product *= +arguments[i];
       return product;
     };
 
@@ -440,6 +440,8 @@ var COFY = (function (nil) {
       '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
       '*': function () { return apply(product, arguments); },
       '/': function (a, b) { return a / b; },
+      'inc': function (x) { return +x + 1; },
+      'dec': function (x) { return +x - 1; },
       'remainder': function (a, b) { return a % b; },
       '<': function () { return check_array_pairs(arguments, lower_than); },
       '>': function () { return check_array_pairs(arguments, greater_than); },
@@ -455,7 +457,8 @@ var COFY = (function (nil) {
       'filter': function (fn, list) { return arguments.length <= 2 ? filter_list(fn, list) : apply(filter_list_n, arguments); },
       'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_list_n, arguments); },
       'reduce': function (fn, value, list) { return arguments.length <= 3 ? reduce_list(fn, value, list) : apply(reduce_list_n, arguments); },
-      'repeat': function (x) { return LazySeq(function repeat() { return Cons(x, LazySeq(repeat)); }); }
+      'repeat': function (x) { return LazySeq(function f() { return Cons(x, LazySeq(f)); }); },
+      'iterate': function f(fn, x) { return Cons(x, LazySeq(function () { return f(fn, fn(x)); })); }
     });
 
     return function (external) {

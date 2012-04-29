@@ -359,6 +359,11 @@
             this.isFalse(COFY.read_eval('(realized? (repeat 1))'));
             this.isSame(COFY.read_eval('(first (repeat 1))'), 1);
             this.isSame(COFY.read_eval('(first (rest (repeat 1)))'), 1);
+            this.isTrue(COFY.read_eval('(seq? (iterate inc 1))'));
+            this.isTrue(COFY.read_eval('(lazy-seq? (rest (iterate inc 1)))'));
+            this.isFalse(COFY.read_eval('(realized? (rest (iterate inc 1)))'));
+            this.isSame(COFY.read_eval('(first (iterate inc 1))'), 1);
+            this.isSame(COFY.read_eval('(first (rest (iterate inc 1)))'), 2);
           },
           macros: function () {
             var cofy = COFY.create();
