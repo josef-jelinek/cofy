@@ -329,6 +329,21 @@
             cofy.read_eval('(def add1 (fn (x) (+ 1 x)))');
             this.throwsError(function () { cofy.read_eval('(use lib)'); });
           },
+          lazy_seq: function () {
+            var val = 0;
+            var cofy = COFY.create({ 'do-stuff': function () { return val += 1; }});
+            cofy.read_eval('(def stream (lazy-seq do-stuff))');
+            this.isSame(val, 0);
+            this.isSame(cofy.read_eval('(first stream)'), 1);
+            this.isSame(cofy.read_eval('(first stream)'), 1);
+            this.isSame(val, 1);
+            this.isTrue(cofy.read_eval('(lazy-seq? (rest stream))'));
+            this.isSame(cofy.read_eval('(first stream)'), 1);
+            this.isSame(val, 1);
+            this.isSame(cofy.read_eval('(first (rest stream))'), 2);
+            this.isSame(val, 2);
+            this.isSame(cofy.read_eval('(first stream)'), 1);
+          },
           macros: function () {
             var cofy = COFY.create();
           }

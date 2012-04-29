@@ -56,6 +56,28 @@ var COFY = (function (nil) {
     freeze_object(this);
   };
 
+  var LazySeq = function (fn) {
+    if (!is_lazy_seq(this))
+      return new LazySeq(fn);
+    var cons = null;
+    var compute = function () {
+      if (cons === null)
+        cons = Cons(fn(), LazySeq(fn));
+    };
+    this.head = function () {
+      compute();
+      return cons.head;
+    };
+    this.tail = function () {
+      compute();
+      return cons.tail;
+    };
+    this.realized = function () {
+      return cons !== null;
+    };
+    freeze_object(this);
+  };
+
   var Var = function (value) {
     if (!is_var(this))
       return new Var(value);
@@ -81,6 +103,7 @@ var COFY = (function (nil) {
   var is_string = function(x) { return typeof x === 'string'; };
   var is_symbol = function(x) { return x instanceof Symbol; };
   var is_cons = function(x) { return x instanceof Cons; };
+  var is_lazy_seq = function(x) { return x instanceof LazySeq; };
   var is_var = function(x) { return x instanceof Var; };
   var is_syntax = function(x) { return x instanceof Syntax; };
   // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
@@ -400,10 +423,12 @@ var COFY = (function (nil) {
       'string?': is_string,
       'fn?': is_function,
       'symbol?': is_symbol,
-      'cons': function (a, b) { return Cons(a, b); },
+      'cons': Cons,
       'cons?': is_cons,
-      'first': function (x) { return x.head; },
-      'rest': function (x) { return x.tail; },
+      'lazy-seq': LazySeq,
+      'lazy-seq?': is_lazy_seq,
+      'first': function (x) { return is_cons(x) ? x.head : x.head(); },
+      'rest': function (x) { return is_cons(x) ? x.tail : x.tail(); },
       'list': function () { return array_to_list(arguments); },
       'var': Var,
       'var?': is_var,
