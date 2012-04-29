@@ -30,6 +30,8 @@ var COFY = (function (nil) {
       runtime_error('Redefining "' + key + '"');
     obj[key] = value;
   };
+  var apply = function (fn, args) { return fn.apply(null, args); };
+  var slice = function (a, start) { return Array.prototype.slice.call(a, start); };
 
   var symbols = {}, multipart = RegExp('^[^/]+(/[^/]+)+$');
 
@@ -307,7 +309,7 @@ var COFY = (function (nil) {
 
     var filter_list_n = function (fn) {
       var i, len = arguments.length - 1, values = [], args, x;
-      for (args = Array.prototype.slice.call(arguments, 1); any(is_not_null, args); set_tails(args)) {
+      for (args = slice(arguments, 1); any(is_not_null, args); set_tails(args)) {
         for (i = 0; i < len; i++) {
           x = args[i];
           if (is_cons(x)) {
@@ -330,15 +332,30 @@ var COFY = (function (nil) {
 
     var map_list_n = function (fn) {
       var values = [], args;
-      for (args = Array.prototype.slice.call(arguments, 1); all(is_cons, args); set_tails(args))
-        values.push(fn.apply(null, get_heads(args)));
-      return array_to_list(values, any(is_null, args) ? null : fn.apply(null, args));
+      for (args = slice(arguments, 1); all(is_cons, args); set_tails(args))
+        values.push(apply(fn, get_heads(args)));
+      return array_to_list(values, any(is_null, args) ? null : apply(fn, args));
     };
 
     var reduce_list = function (fn, value, list) {
       for (var rest = list; is_cons(rest); rest = rest.tail)
         value = fn(value, rest.head);
       return rest === null || list === nil ? value : fn(value, rest);
+    };
+
+    var reduce_list_n = function (fn, value) {
+      var i, len = arguments.length - 2, args, x;
+      for (args = slice(arguments, 2); any(is_not_null, args); set_tails(args)) {
+        for (i = 0; i < len; i++) {
+          x = args[i];
+          if (is_cons(x)) {
+            value = fn(value, x.head);
+          } else if (x !== null) {
+            value = fn(value, x);
+          }
+        }
+      }
+      return value;
     };
 
     var set_value = function (o, s, value) {
@@ -364,8 +381,8 @@ var COFY = (function (nil) {
         builtins[math_names[i]] = (function (fn) { return function (a) { return fn(a); } }(Math[math_names[i]]));
       builtins['pow'] = function (a, b) { return Math.pow(a, b); };
       builtins['atan2'] = function (a, b) { return Math.atan(a, b); };
-      builtins['min'] = function () { return Math.min.apply(null, arguments); };
-      builtins['max'] = function () { return Math.max.apply(null, arguments); };
+      builtins['min'] = function () { return apply(Math.min, arguments); };
+      builtins['max'] = function () { return apply(Math.max, arguments); };
       builtins['random'] = function () { return Math.random(); };
       builtins['pi'] = Math.PI;
       builtins['e'] = Math.E;
@@ -394,10 +411,10 @@ var COFY = (function (nil) {
       'swap!': swap,
       'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
       '.apply': function (o, s, args) { return o[is_symbol(s) ? s.name : s].apply(o, list_to_array(args)); },
-      '.call': function (o, s) { return o[is_symbol(s) ? s.name : s].apply(o, Array.prototype.slice.call(arguments, 2)); },
-      '+': function () { return sum.apply(null, arguments); },
+      '.call': function (o, s) { return o[is_symbol(s) ? s.name : s].apply(o, slice(arguments, 2)); },
+      '+': function () { return apply(sum, arguments); },
       '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
-      '*': function () { return product.apply(null, arguments); },
+      '*': function () { return apply(product, arguments); },
       '/': function (a, b) { return a / b; },
       'remainder': function (a, b) { return a % b; },
       '<': function () { return check_array_pairs(arguments, lower_than); },
@@ -411,9 +428,9 @@ var COFY = (function (nil) {
       'array': list_to_array,
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
-      'filter': function (fn, list) { return arguments.length <= 2 ? filter_list(fn, list) : filter_list_n.apply(null, arguments); },
-      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : map_list_n.apply(null, arguments); },
-      'reduce': reduce_list
+      'filter': function (fn, list) { return arguments.length <= 2 ? filter_list(fn, list) : apply(filter_list_n, arguments); },
+      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_list_n, arguments); },
+      'reduce': function (fn, value, list) { return arguments.length <= 3 ? reduce_list(fn, value, list) : apply(reduce_list_n, arguments); }
     });
 
     return function (external) {
