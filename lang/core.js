@@ -454,7 +454,8 @@ var COFY = (function (nil) {
       'unschedule': function (id) { return clearTimeout(id); },
       'filter': function (fn, list) { return arguments.length <= 2 ? filter_list(fn, list) : apply(filter_list_n, arguments); },
       'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_list_n, arguments); },
-      'reduce': function (fn, value, list) { return arguments.length <= 3 ? reduce_list(fn, value, list) : apply(reduce_list_n, arguments); }
+      'reduce': function (fn, value, list) { return arguments.length <= 3 ? reduce_list(fn, value, list) : apply(reduce_list_n, arguments); },
+      'repeat': function (x) { return LazySeq(function repeat() { return Cons(x, LazySeq(repeat)); }); }
     });
 
     return function (external) {

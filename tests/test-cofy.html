@@ -354,6 +354,12 @@
             this.isFalse(cofy.read_eval("(empty? (lazy-seq (fn () '(0))))"));
             this.isTrue(cofy.read_eval("(empty? (rest (lazy-seq (fn () '(0)))))"));
           },
+          infinite_seq: function () {
+            this.isTrue(COFY.read_eval('(lazy-seq? (repeat 1))'));
+            this.isFalse(COFY.read_eval('(realized? (repeat 1))'));
+            this.isSame(COFY.read_eval('(first (repeat 1))'), 1);
+            this.isSame(COFY.read_eval('(first (rest (repeat 1)))'), 1);
+          },
           macros: function () {
             var cofy = COFY.create();
           }
