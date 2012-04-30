@@ -114,6 +114,8 @@ var COFY = (function (nil) {
   var is_nan = function (x) { return x !== nil && isNaN(x); };
   var is_truthy = function (x) { return x !== false && x !== null && x !== nil; };
   var is_falsy = function (x) { return x === false || x === null || x === nil; };
+  var head = function (x) { return is_cons(x) ? x.head : is_seq(x) ? x.head() : nil; };
+  var tail = function (x) { return is_cons(x) ? x.tail : is_seq(x) ? x.tail() : nil; };
 
   // recursive descent parser
   var parse = (function () {
@@ -268,7 +270,7 @@ var COFY = (function (nil) {
     };
 
     var equal = function (a, b) {
-      return a === b || is_cons(a) && is_cons(b) && equal(a.head, b.head) && equal(a.tail, b.tail);
+      return a === b || is_seq(a) && is_seq(b) && equal(head(a), head(b)) && equal(tail(a), tail(b));
     };
 
     var sum = function () {
@@ -361,6 +363,34 @@ var COFY = (function (nil) {
       return array_to_list(values);
     };
 
+    var repeat_seq = function (x) {
+      var f = function () { return Cons(x, LazySeq(f)); };
+      return LazySeq(f);
+    };
+
+    var iterate_seq = function (fn, x) {
+      var f = function (x) { return Cons(x, LazySeq(function () { return f(fn(x)); })); };
+      return f(x);
+    };
+
+    var take_seq = function (n, seq) {
+      var f = function (n, seq) {
+        return Cons(head(seq), +n > 0 ? LazySeq(function () { return f(+n - 1, tail(seq)); }) : null);
+      };
+      return LazySeq(function () { return f(+n - 1, seq); });
+    };
+
+    var skip_seq = function (n, seq) {
+      n = +n;
+      if (!(n - 1 < n))
+        return null;
+      return LazySeq(function () {
+        for (var i = 0; i < n; i++)
+          seq = tail(seq);
+        return Cons(head(seq), tail(seq));
+      });
+    };
+
     var set_value = function (o, s, value) {
       if (is_var(o)) {
         o.value = s;
@@ -410,8 +440,8 @@ var COFY = (function (nil) {
       'seq?': is_seq,
       'empty?': function (x) { return x === null || is_lazy_seq(x) && x.value() === null; },
       'realized?': function (x) { return is_lazy_seq(x) && x.realized(); },
-      'first': function (x) { return is_cons(x) ? x.head : is_seq ? x.head() : nil; },
-      'rest': function (x) { return is_cons(x) ? x.tail : is_seq ? x.tail() : nil; },
+      'first': head,
+      'rest': tail,
       'list': function () { return array_to_list(arguments); },
       'var': Var,
       'var?': is_var,
@@ -442,8 +472,10 @@ var COFY = (function (nil) {
       'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_lists, arguments); },
       'reduce': reduce_list,
       'zip': zip_lists,
-      'repeat': function (x) { return LazySeq(function f() { return Cons(x, LazySeq(f)); }); },
-      'iterate': function f(fn, x) { return Cons(x, LazySeq(function () { return f(fn, fn(x)); })); }
+      'repeat': repeat_seq,
+      'iterate': iterate_seq,
+      'take': take_seq,
+      'skip': skip_seq
     });
 
     return function (external) {
