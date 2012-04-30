@@ -363,8 +363,9 @@ var COFY = (function (nil) {
       return array_to_list(values);
     };
 
-    var repeat_seq = function (x) {
-      var f = function () { return Cons(x, LazySeq(f)); };
+    var repeat_seq = function () {
+      var values = arguments;
+      var f = function () { return array_to_list(values, LazySeq(f)); };
       return LazySeq(f);
     };
 
