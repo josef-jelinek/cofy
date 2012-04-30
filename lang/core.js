@@ -326,22 +326,6 @@ var COFY = (function (nil) {
       return array_to_list(values, rest === null || is_falsy(fn(rest)) ? null : rest);
     };
 
-    var filter_list_n = function (fn) {
-      var i, len = arguments.length - 1, values = [], args, x;
-      for (args = slice(arguments, 1); any(is_not_null, args); set_tails(args)) {
-        for (i = 0; i < len; i++) {
-          x = args[i];
-          if (is_cons(x)) {
-            if (is_truthy(fn(x.head)))
-              values.push(x.head);
-          } else if (x !== null && is_truthy(fn(x))) {
-            values.push(x);
-          }
-        }
-      }
-      return array_to_list(values);
-    };
-
     var map_list = function (fn, list) {
       var values = [], rest;
       for (rest = list; is_cons(rest); rest = rest.tail)
@@ -349,7 +333,7 @@ var COFY = (function (nil) {
       return array_to_list(values, rest === null ? null : fn(rest));
     };
 
-    var map_list_n = function (fn) {
+    var map_lists = function (fn) {
       var values = [], args;
       for (args = slice(arguments, 1); all(is_cons, args); set_tails(args))
         values.push(apply(fn, get_heads(args)));
@@ -362,19 +346,19 @@ var COFY = (function (nil) {
       return rest === null || list === nil ? value : fn(value, rest);
     };
 
-    var reduce_list_n = function (fn, value) {
-      var i, len = arguments.length - 2, args, x;
-      for (args = slice(arguments, 2); any(is_not_null, args); set_tails(args)) {
+    var zip_lists = function (fn) {
+      var i, len = arguments.length, values = [], args, x;
+      for (args = arguments; any(is_not_null, args); set_tails(args)) {
         for (i = 0; i < len; i++) {
           x = args[i];
           if (is_cons(x)) {
-            value = fn(value, x.head);
+            values.push(x.head);
           } else if (x !== null) {
-            value = fn(value, x);
+            values.push(x);
           }
         }
       }
-      return value;
+      return array_to_list(values);
     };
 
     var set_value = function (o, s, value) {
@@ -454,9 +438,10 @@ var COFY = (function (nil) {
       'array': list_to_array,
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
-      'filter': function (fn, list) { return arguments.length <= 2 ? filter_list(fn, list) : apply(filter_list_n, arguments); },
-      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_list_n, arguments); },
-      'reduce': function (fn, value, list) { return arguments.length <= 3 ? reduce_list(fn, value, list) : apply(reduce_list_n, arguments); },
+      'filter': filter_list,
+      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_lists, arguments); },
+      'reduce': reduce_list,
+      'zip': zip_lists,
       'repeat': function (x) { return LazySeq(function f() { return Cons(x, LazySeq(f)); }); },
       'iterate': function f(fn, x) { return Cons(x, LazySeq(function () { return f(fn, fn(x)); })); }
     });
