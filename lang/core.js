@@ -100,6 +100,7 @@ var COFY = (function (nil) {
   var is_cons = function(x) { return x instanceof Cons; };
   var is_lazy_seq = function(x) { return x instanceof LazySeq; };
   var is_seq = function(x) { return is_cons(x) || is_lazy_seq(x); };
+  var is_seq_pair = function(x) { return is_cons(x) || is_lazy_seq(x) && is_cons(x.value()); };
   var is_var = function(x) { return x instanceof Var; };
   var is_syntax = function(x) { return x instanceof Syntax; };
   // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
@@ -270,7 +271,15 @@ var COFY = (function (nil) {
     };
 
     var equal = function (a, b) {
-      return a === b || is_seq(a) && is_seq(b) && equal(head(a), head(b)) && equal(tail(a), tail(b));
+      return a === b || is_seq(a) && is_seq(b) && seq_equal(a, b);
+    };
+
+    var seq_equal = function (a, b) {
+      return empty_seq(a) && empty_seq(b) || !empty_seq(a) && !empty_seq(b) && equal(head(a), head(b)) && equal(tail(a), tail(b));
+    };
+
+    var empty_seq = function (x) {
+      return x === null || is_lazy_seq(x) && x.value() === null;
     };
 
     var sum = function () {
@@ -320,12 +329,18 @@ var COFY = (function (nil) {
       return heads;
     };
 
-    var filter_list = function (fn, list) {
-      var values = [], rest;
-      for (rest = list; is_cons(rest); rest = rest.tail)
-        if (is_truthy(fn(rest.head)))
-          values.push(rest.head);
-      return array_to_list(values, rest === null || is_falsy(fn(rest)) ? null : rest);
+    var filter_seq = function (fn, seq) {
+      if (seq == null)
+        return null;
+      var f = function (seq) {
+        var rest = seq;
+        while (is_seq_pair(rest) && is_falsy(fn(head(rest))))
+          rest = tail(rest);
+        if (is_seq_pair(rest))
+          return Cons(head(rest), LazySeq(function () { return f(tail(rest)); }));
+        return rest === null || is_falsy(fn(rest)) ? null : rest;
+      };
+      return LazySeq(function () { return f(seq); });
     };
 
     var map_list = function (fn, list) {
@@ -439,7 +454,7 @@ var COFY = (function (nil) {
       'lazy-seq': LazySeq,
       'lazy-seq?': is_lazy_seq,
       'seq?': is_seq,
-      'empty?': function (x) { return x === null || is_lazy_seq(x) && x.value() === null; },
+      'empty?': empty_seq,
       'realized?': function (x) { return is_lazy_seq(x) && x.realized(); },
       'first': head,
       'rest': tail,
@@ -469,7 +484,7 @@ var COFY = (function (nil) {
       'array': list_to_array,
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
-      'filter': filter_list,
+      'filter': filter_seq,
       'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_lists, arguments); },
       'reduce': reduce_list,
       'zip': zip_lists,

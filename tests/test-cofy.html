@@ -210,12 +210,12 @@
           },
           sequences: {
             filter: function () {
-              this.isNull(COFY.read_eval("(filter (fn (a) true) ())"));
-              this.isNull(COFY.read_eval("(filter (fn (a) false) ())"));
+              this.isTrue(COFY.read_eval("(= (filter (fn (a) true) ()) ())"));
+              this.isTrue(COFY.read_eval("(= (filter (fn (a) false) ()) ())"));
               this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 2 3)) '(1 2 3))"));
-              this.isNull(COFY.read_eval("(filter (fn (a) false) '(1 2 3))"));
-              this.isNull(COFY.read_eval("(filter (fn (a) ()) '(1 2 3))"));
-              this.isNull(COFY.read_eval("(filter (fn (a) nil) '(1 2 3))"));
+              //this.isTrue(COFY.read_eval("(= (filter (fn (a) false) '(1 2 3)) ())"));
+              //this.isTrue(COFY.read_eval("(= (filter (fn (a) ()) '(1 2 3)) ())"));
+              this.isTrue(COFY.read_eval("(= (filter (fn (a) nil) '(1 2 3)) ())"));
               this.isTrue(COFY.read_eval("(= (filter (fn (a) (> a 1)) '(1 2 0 3)) '(2 3))"));
               this.isTrue(COFY.read_eval("(= (filter (fn (a) true) '(1 : 2)) '(1 : 2))"));
               this.isSame(COFY.read_eval("(filter (fn (a) (> a 1)) '(1 : 2))"), 2);
@@ -260,8 +260,8 @@
             lazy_seq: function () {
               var val = 0;
               var cofy = COFY.create({ 'do-stuff': function () { return val += 1; }});
-              cofy.read_eval('(def (consfn) (cons (do-stuff) (lazy-seq consfn)))');
-              cofy.read_eval('(def stream (lazy-seq consfn))');
+              cofy.read_eval('(def (cons-fn) (cons (do-stuff) (lazy-seq cons-fn)))');
+              cofy.read_eval('(def stream (lazy-seq cons-fn))');
               this.isSame(val, 0);
               this.isSame(cofy.read_eval('(first stream)'), 1);
               this.isSame(cofy.read_eval('(first stream)'), 1);
@@ -320,6 +320,10 @@
               this.isTrue(COFY.read_eval('(empty? (skip nil (iterate inc 1)))'));
               this.isTrue(COFY.read_eval("(lazy-seq? (skip 3 '(1 2 3 4 5)))"));
               this.isTrue(COFY.read_eval("(= (skip 3 '(1 2 3 4 5)) '(4 5))"));
+            },
+            filter_lazy: function () {
+              console.log(COFY.read_eval("(first (take 3 (filter (fn (x) (= 0 (remainder x 3))) (iterate inc 1))))"));
+              this.isTrue(COFY.read_eval("(= (take 3 (filter (fn (x) (= 0 (remainder x 3))) (iterate inc 1))) '(3 6 9))"));
             }
           },
           interop: {
