@@ -267,8 +267,8 @@ var COFY = (function (nil) {
   var create_global_env = (function () {
     var list_to_array = function (list) {
       var values = [], rest;
-      for (rest = list; is_cons(rest); rest = rest.tail)
-        values.push(rest.head);
+      for (rest = list; is_pair(rest); rest = tail(rest))
+        values.push(head(rest));
       return values;
     };
 
@@ -485,6 +485,7 @@ var COFY = (function (nil) {
       'symbol?': is_symbol,
       'cons': Cons,
       'cons?': is_cons,
+      'pair?': is_pair,
       'lazy-seq': LazySeq,
       'lazy-seq?': is_lazy_seq,
       'seq?': is_seq,
@@ -544,11 +545,12 @@ var COFY = (function (nil) {
     };
 
     var compile = function (s_expr) {
-      if (is_symbol(s_expr))
-        return compile_symbol(s_expr);
-      if (!is_cons(s_expr))
-        return s_expr;
-      return has_syntax_defined(s_expr.head) ? compile_syntax(s_expr) : compile_call(s_expr);
+      var x = value(s_expr);
+      if (is_symbol(x))
+        return compile_symbol(x);
+      if (!is_pair(x))
+        return x;
+      return has_syntax_defined(head(x)) ? compile_syntax(x) : compile_call(x);
     };
 
     var compile_symbol = function (symbol) {
@@ -575,39 +577,40 @@ var COFY = (function (nil) {
     };
 
     var has_syntax_defined = function (s_expr) {
-      return is_symbol(s_expr) && is_syntax(syntax_bindings[s_expr.name]);
+      var x = value(s_expr);
+      return is_symbol(x) && is_syntax(syntax_bindings[x.name]);
     };
 
     var compile_syntax = function (s_expr) {
-      return syntax_bindings[s_expr.head.name].compile(s_expr.tail);
+      return syntax_bindings[value(head(s_expr)).name].compile(tail(s_expr));
     };
 
     var compile_do = function (s_expr) {
       var seq = map(compile, s_expr);
       return function (env) {
         var rest, res;
-        for (rest = seq; is_cons(rest); rest = rest.tail)
-          res = evaluate(rest.head, env);
+        for (rest = seq; is_pair(rest); rest = tail(rest))
+          res = evaluate(head(rest), env);
         return res;
       };
     };
 
-    var map = function (f, list) {
-      return !list ? list : Cons(f(list.head), map(f, list.tail));
+    var map = function (f, seq) {
+      return is_pair(seq) ? Cons(f(head(seq)), map(f, tail(seq))) : null;
     };
 
     var compile_call = function (s_expr) {
       var expr = map(compile, s_expr), o = {};
       return function (env) {
-        var fn = evaluate(expr.head, env), values = [], rest;
-        for (rest = expr.tail; is_cons(rest); rest = rest.tail)
-          values.push(evaluate(rest.head, env));
+        var fn = evaluate(head(expr), env), values = [], rest;
+        for (rest = tail(expr); is_pair(rest); rest = tail(rest))
+          values.push(evaluate(head(rest), env));
         return fn.apply(o, values);
       };
     };
 
     var compile_fn = function (s_expr) {
-      var names = s_expr.head, body = compile_do(s_expr.tail);
+      var names = head(s_expr), body = compile_do(tail(s_expr));
       return function (env) {
         return function () {
           return evaluate(body, bind_args(names, arguments, env));
@@ -617,9 +620,9 @@ var COFY = (function (nil) {
 
     var bind_args = function (names, values, parent_env) {
       var i = 0, rest, env = derive_from(parent_env);
-      for (rest = names; is_cons(rest); rest = rest.tail)
-        define_frozen_property(env, rest.head.name, i < values.length ? values[i++] : nil);
-      if (rest)
+      for (rest = names; is_pair(rest); rest = tail(rest))
+        define_frozen_property(env, head(rest).name, i < values.length ? values[i++] : nil);
+      if (rest !== null)
         define_frozen_property(env, rest.name, array_tail_to_list(values, i));
       return env;
     };
@@ -632,37 +635,35 @@ var COFY = (function (nil) {
     };
 
     var compile_if = function (s_expr) {
-      var cond = compile(s_expr.head),
-          t = compile(s_expr.tail.head),
-          f = is_cons(s_expr.tail.tail) ? compile(s_expr.tail.tail.head) : nil;
+      var cond = compile(head(s_expr)),
+          t = compile(head(tail(s_expr))),
+          f = is_pair(tail(tail(s_expr))) ? compile(head(tail(tail(s_expr)))) : nil;
       return function (env) {
         return evaluate(evaluate(cond, env) ? t : f, env);
       };
     };
 
     var compile_def = function (s_expr) {
-      var pairs;
-      if (is_cons(s_expr.head))
+      if (is_pair(head(s_expr)))
         return compile_def_fn(s_expr);
-      pairs = get_def_pairs(s_expr);
+      var pairs = get_def_pairs(s_expr);
       return function (env) {
-        for (var rest = pairs; is_cons(rest); rest = rest.tail)
-          define_binding(rest.head.head, rest.head.tail, env);
+        for (var rest = pairs; is_pair(rest); rest = tail(rest))
+          define_binding(head(head(rest)), tail(head(rest)), env);
       };
     };
 
     var get_def_pairs = function (s_expr) {
-      var pair;
       if (!s_expr)
         return null;
-      pair = Cons(s_expr.head.name, compile(s_expr.tail.head));
-      return Cons(pair, get_def_pairs(s_expr.tail.tail));
+      var pair = Cons(head(s_expr).name, compile(head(tail(s_expr))));
+      return Cons(pair, get_def_pairs(tail(tail(s_expr))));
     };
 
     var compile_def_fn = function (s_expr) {
-      var fn = compile_fn(Cons(s_expr.head.tail, s_expr.tail));
+      var fn = compile_fn(Cons(tail(head(s_expr)), tail(s_expr)));
       return function (env) {
-        define_binding(s_expr.head.head.name, fn, env);
+        define_binding(head(head(s_expr)).name, fn, env);
       };
     };
 
@@ -673,8 +674,8 @@ var COFY = (function (nil) {
     var compile_use = function (s_expr) {
       var expr = map(compile, s_expr);
       return function (env) {
-        for (var rest = expr; is_cons(rest); rest = rest.tail)
-          import_all(evaluate(rest.head, env), env);
+        for (var rest = expr; is_pair(rest); rest = tail(rest))
+          import_all(evaluate(head(rest), env), env);
       };
     };
 
@@ -688,7 +689,7 @@ var COFY = (function (nil) {
     };
 
     var syntax_bindings = {
-      'quote': Syntax(function (s_expr) { return s_expr.head; }),
+      'quote': Syntax(function (s_expr) { return head(s_expr); }),
       'fn': Syntax(compile_fn),
       'if': Syntax(compile_if),
       'def': Syntax(compile_def),
