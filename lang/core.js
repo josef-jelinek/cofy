@@ -115,6 +115,7 @@ var COFY = (function (nil) {
   var is_falsy = function (x) { return x === false || x === null || x === nil; };
   var is_pair = function(x) { return is_cons(x) || is_lazy_seq(x) && is_cons(x.value()); };
   var is_empty = function (x) { return is_null(x) || is_lazy_seq(x) && is_null(x.value()); };
+  var is_not_empty = function (x) { return !is_empty(x); };
   var is_seq = function(x) { return is_pair(x) || is_empty(x); };
   var head = function (x) { return is_cons(x) ? x.head : is_pair(x) ? x.head() : nil; };
   var tail = function (x) { return is_cons(x) ? x.tail : is_pair(x) ? x.tail() : nil; };
@@ -334,20 +335,34 @@ var COFY = (function (nil) {
     var lower_than_or_equal = function (a, b) { return a <= b; };
     var greater_than_or_equal = function (a, b) { return a >= b; };
 
-    var set_tails = function (values) {
-      for (var i = 0, len = values.length; i < len; i++)
-        values[i] = is_cons(values[i]) ? values[i].tail : null;
+    var take_seq = function (n, seq) {
+      if (seq === null)
+        return null;
+      n = +n;
+      var f = function (n, seq) {
+        if (n > 0 && is_pair(seq))
+          return Cons(head(seq), LazySeq(function () { return f(n - 1, tail(seq)); }));
+        return n <= 0 || is_empty(seq) ? null : value(seq);
+      };
+      return LazySeq(function () { return f(n, seq); });
     };
 
-    var get_heads = function (values) {
-      var i, len = values.length, heads = Array(len);
-      for (i = 0; i < len; i++)
-        heads[i] = values[i].head;
-      return heads;
+    var skip_seq = function (n, seq) {
+      if (seq === null)
+        return null;
+      n = +n;
+      if (!(n - 1 < n))
+        return null;
+      return LazySeq(function () {
+        var i, rest = seq;
+        for (i = 0; i < n && is_pair(rest); i++)
+          rest = tail(rest);
+        return i < n || is_empty(rest) ? null : value(rest);
+      });
     };
 
     var filter_seq = function (fn, seq) {
-      if (seq == null)
+      if (seq === null)
         return null;
       var f = function (seq) {
         var rest = seq;
@@ -355,16 +370,20 @@ var COFY = (function (nil) {
           rest = tail(rest);
         if (is_pair(rest))
           return Cons(head(rest), LazySeq(function () { return f(tail(rest)); }));
-        return rest === null || is_falsy(fn(rest)) ? null : rest;
+        return is_empty(rest) || is_falsy(fn(rest)) ? null : rest;
       };
       return LazySeq(function () { return f(seq); });
     };
 
-    var map_list = function (fn, list) {
-      var values = [], rest;
-      for (rest = list; is_cons(rest); rest = rest.tail)
-        values.push(fn(rest.head));
-      return array_to_list(values, rest === null ? null : fn(rest));
+    var map_seq = function (fn, seq) {
+      if (seq === null)
+        return null;
+      var f = function (seq) {
+        if (is_pair(seq))
+          return Cons(fn(head(seq)), LazySeq(function () { return f(tail(seq)); }));
+        return is_empty(seq) ? null : fn(seq);
+      };
+      return LazySeq(function () { return f(seq); });
     };
 
     var map_lists = function (fn) {
@@ -374,25 +393,44 @@ var COFY = (function (nil) {
       return array_to_list(values, any(is_null, args) ? null : apply(fn, args));
     };
 
+    var get_heads = function (values) {
+      var i, len = values.length, heads = Array(len);
+      for (i = 0; i < len; i++)
+        heads[i] = head(values[i]);
+      return heads;
+    };
+
+    var set_tails = function (values) {
+      for (var i = 0, len = values.length; i < len; i++)
+        values[i] = is_pair(values[i]) ? tail(values[i]) : null;
+    };
+
     var reduce_seq = function (fn, val, seq) {
       for (var rest = seq; is_pair(rest); rest = tail(rest))
         val = fn(val, head(rest));
       return is_empty(rest) || seq === nil ? val : fn(val, value(rest));
     };
 
-    var zip_lists = function (fn) {
-      var i, len = arguments.length, values = [], args, x;
-      for (args = arguments; any(is_not_null, args); set_tails(args)) {
-        for (i = 0; i < len; i++) {
-          x = args[i];
-          if (is_cons(x)) {
-            values.push(x.head);
-          } else if (x !== null) {
-            values.push(x);
-          }
-        }
+    var zip_seqs = function () {
+      var seqs = arguments;
+      var f = function () {
+        if (all(is_empty, seqs))
+          return null;
+        var values = pick_heads(seqs);
+        set_tails(seqs);
+        return array_to_list(values, LazySeq(f));
+      };
+      return LazySeq(f);
+    };
+
+    var pick_heads = function (values) {
+      var i, len = values.length, x, heads = [];
+      for (i = 0; i < len; i++) {
+        x = values[i];
+        if (is_not_empty(x))
+          heads.push(is_pair(x) ? head(x) : value(x));
       }
-      return array_to_list(values);
+      return heads;
     };
 
     var repeat_seq = function () {
@@ -404,24 +442,6 @@ var COFY = (function (nil) {
     var iterate_seq = function (fn, x) {
       var f = function (x) { return Cons(x, LazySeq(function () { return f(fn(x)); })); };
       return f(x);
-    };
-
-    var take_seq = function (n, seq) {
-      var f = function (n, seq) {
-        return Cons(head(seq), +n > 0 ? LazySeq(function () { return f(+n - 1, tail(seq)); }) : null);
-      };
-      return LazySeq(function () { return f(+n - 1, seq); });
-    };
-
-    var skip_seq = function (n, seq) {
-      n = +n;
-      if (!(n - 1 < n))
-        return null;
-      return LazySeq(function () {
-        for (var i = 0; i < n; i++)
-          seq = tail(seq);
-        return Cons(head(seq), tail(seq));
-      });
     };
 
     var set_value = function (o, s, value) {
@@ -502,9 +522,9 @@ var COFY = (function (nil) {
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
       'filter': filter_seq,
-      'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_lists, arguments); },
+      'map': function (fn, list) { return arguments.length <= 2 ? map_seq(fn, list) : apply(map_lists, arguments); },
       'reduce': reduce_seq,
-      'zip': zip_lists,
+      'zip': zip_seqs,
       'repeat': repeat_seq,
       'iterate': iterate_seq,
       'take': take_seq,

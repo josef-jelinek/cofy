@@ -230,6 +230,11 @@
               this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 3)) '(11 12 13))"));
               this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 : 3)) '(11 12 : 13))"));
               this.isSame(COFY.read_eval("(map (fn (a) (+ a 10)) 1)"), 11);
+              this.isTrue(COFY.read_eval("(lazy-seq? (map (fn (a) (+ a 10)) '(1 2 3)))"));
+              this.isFalse(COFY.read_eval("(realized? (map (fn (a) (+ a 10)) '(1 2 3)))"));
+              this.isTrue(COFY.read_eval("(lazy-seq? (map (fn (a) (+ a 10)) (iterate inc 1)))"));
+              this.isFalse(COFY.read_eval("(realized? (map (fn (a) (+ a 10)) (iterate inc 1)))"));
+              this.isTrue(COFY.read_eval("(= (take 4 (map (fn (a) (+ a 10)) (iterate inc 1))) '(11 12 13 14))"));
             },
             map_multiple_args: function () {
               this.isSame(COFY.read_eval("(map (fn () 1))"), 1);
@@ -258,6 +263,9 @@
               this.isTrue(COFY.read_eval("(= (zip '(1 : 2)) '(1 2))"));
               this.isTrue(COFY.read_eval("(= (zip '(1 2)) '(1 2))"));
               this.isTrue(COFY.read_eval("(= (zip '(1 5 : 8) '(2 6) '(3 : 7) 4) '(1 2 3 4 5 6 7 8))"));
+              this.isTrue(COFY.read_eval("(= (take 5 (zip (iterate inc 1) (iterate inc 10))) '(1 10 2 11 3))"));
+              this.isTrue(COFY.read_eval("(= (take 6 (zip (iterate inc 1) '(10 11))) '(1 10 2 11 3 4))"));
+              this.isTrue(COFY.read_eval("(= (take 6 (zip (iterate inc 1) '(10 : 11))) '(1 10 2 11 3 4))"));
             },
             lazy_seq: function () {
               var val = 0;
