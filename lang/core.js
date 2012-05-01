@@ -336,61 +336,57 @@ var COFY = (function (nil) {
     var greater_than_or_equal = function (a, b) { return a >= b; };
 
     var take_seq = function (n, seq) {
-      if (seq === null)
-        return null;
       n = +n;
-      var f = function (n, seq) {
-        if (n > 0 && is_pair(seq))
-          return Cons(head(seq), LazySeq(function () { return f(n - 1, tail(seq)); }));
-        return n <= 0 || is_empty(seq) ? null : value(seq);
-      };
-      return LazySeq(function () { return f(n, seq); });
+      return seq === null ? null : LazySeq(function f() {
+        if (n <= 0 || !is_pair(seq))
+          return n <= 0 || is_empty(seq) ? null : value(seq);
+        var x = head(seq);
+        seq = tail(seq);
+        n -= 1;
+        return Cons(x, LazySeq(f));
+      });
     };
 
     var skip_seq = function (n, seq) {
-      if (seq === null)
-        return null;
       n = +n;
-      if (!(n - 1 < n))
-        return null;
-      return LazySeq(function () {
-        var i, rest = seq;
-        for (i = 0; i < n && is_pair(rest); i++)
-          rest = tail(rest);
-        return i < n || is_empty(rest) ? null : value(rest);
+      return seq === null || !(n - 1 < n) ? null : LazySeq(function () {
+        for (var i = 0; i < n && is_pair(seq); i++)
+          seq = tail(seq);
+        return i < n || is_empty(seq) ? null : value(seq);
       });
     };
 
     var filter_seq = function (fn, seq) {
-      if (seq === null)
-        return null;
-      var f = function (seq) {
-        var rest = seq;
-        while (is_pair(rest) && is_falsy(fn(head(rest))))
-          rest = tail(rest);
-        if (is_pair(rest))
-          return Cons(head(rest), LazySeq(function () { return f(tail(rest)); }));
-        return is_empty(rest) || is_falsy(fn(rest)) ? null : rest;
-      };
-      return LazySeq(function () { return f(seq); });
+      return seq === null ? null : LazySeq(function f() {
+        while (is_pair(seq) && is_falsy(fn(head(seq))))
+          seq = tail(seq);
+        if (!is_pair(seq))
+          return is_empty(seq) || is_falsy(fn(seq)) ? null : value(seq);
+        var x = head(seq);
+        seq = tail(seq);
+        return Cons(x, LazySeq(f));
+      });
     };
 
     var map_seq = function (fn, seq) {
-      if (seq === null)
-        return null;
-      var f = function (seq) {
-        if (is_pair(seq))
-          return Cons(fn(head(seq)), LazySeq(function () { return f(tail(seq)); }));
-        return is_empty(seq) ? null : fn(seq);
-      };
-      return LazySeq(function () { return f(seq); });
+      return seq === null ? null : LazySeq(function f() {
+        if (!is_pair(seq))
+          return is_empty(seq) ? null : fn(seq);
+        var x = fn(head(seq));
+        seq = tail(seq);
+        return Cons(x, LazySeq(f));
+      });
     };
 
-    var map_lists = function (fn) {
-      var values = [], args;
-      for (args = slice(arguments, 1); all(is_cons, args); set_tails(args))
-        values.push(apply(fn, get_heads(args)));
-      return array_to_list(values, any(is_null, args) ? null : apply(fn, args));
+    var map_seqs = function (fn) {
+      var seqs = slice(arguments, 1);
+      return LazySeq(function f() {
+        if (!all(is_pair, seqs))
+          return any(is_empty, seqs) ? null : apply(fn, seqs);
+        var x = apply(fn, get_heads(seqs));
+        set_tails(seqs);
+        return Cons(x, LazySeq(f));
+      });
     };
 
     var get_heads = function (values) {
@@ -406,21 +402,24 @@ var COFY = (function (nil) {
     };
 
     var reduce_seq = function (fn, val, seq) {
-      for (var rest = seq; is_pair(rest); rest = tail(rest))
-        val = fn(val, head(rest));
-      return is_empty(rest) || seq === nil ? val : fn(val, value(rest));
+      if (arguments.length <= 2)
+        return val;
+      while (is_pair(seq)) {
+        val = fn(val, head(seq));
+        seq = tail(seq);
+      }
+      return is_empty(seq) ? val : fn(val, value(seq));
     };
 
     var zip_seqs = function () {
       var seqs = arguments;
-      var f = function () {
+      return LazySeq(function f() {
         if (all(is_empty, seqs))
           return null;
         var values = pick_heads(seqs);
         set_tails(seqs);
         return array_to_list(values, LazySeq(f));
-      };
-      return LazySeq(f);
+      });
     };
 
     var pick_heads = function (values) {
@@ -435,13 +434,11 @@ var COFY = (function (nil) {
 
     var repeat_seq = function () {
       var values = arguments;
-      var f = function () { return array_to_list(values, LazySeq(f)); };
-      return LazySeq(f);
+      return LazySeq(function f() { return array_to_list(values, LazySeq(f)); });
     };
 
     var iterate_seq = function (fn, x) {
-      var f = function (x) { return Cons(x, LazySeq(function () { return f(fn(x)); })); };
-      return f(x);
+      return (function f(x) { return Cons(x, LazySeq(function () { return f(fn(x)); })); }(x));
     };
 
     var set_value = function (o, s, value) {
@@ -522,7 +519,7 @@ var COFY = (function (nil) {
       'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
       'unschedule': function (id) { return clearTimeout(id); },
       'filter': filter_seq,
-      'map': function (fn, list) { return arguments.length <= 2 ? map_seq(fn, list) : apply(map_lists, arguments); },
+      'map': function (fn, list) { return arguments.length <= 2 ? map_seq(fn, list) : apply(map_seqs, arguments); },
       'reduce': reduce_seq,
       'zip': zip_seqs,
       'repeat': repeat_seq,
