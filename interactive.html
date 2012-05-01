@@ -58,7 +58,6 @@
   <p>A recursive function 'my-map' takes a function and a list. It traverses the list and returns a new list.
   Each element in the new list is a result of applying the function to the corresponding element of the original list.</p>
   <div class="editor"><textarea id="input1" rows=8>;; map function example
-(def (inc n) (+ n 1))
 (def (my-map f x)
      (if (= x ()) ()
                   (cons (f (first x))
