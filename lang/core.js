@@ -99,8 +99,6 @@ var COFY = (function (nil) {
   var is_symbol = function(x) { return x instanceof Symbol; };
   var is_cons = function(x) { return x instanceof Cons; };
   var is_lazy_seq = function(x) { return x instanceof LazySeq; };
-  var is_seq = function(x) { return is_cons(x) || is_lazy_seq(x); };
-  var is_seq_pair = function(x) { return is_cons(x) || is_lazy_seq(x) && is_cons(x.value()); };
   var is_var = function(x) { return x instanceof Var; };
   var is_syntax = function(x) { return x instanceof Syntax; };
   // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
@@ -115,8 +113,12 @@ var COFY = (function (nil) {
   var is_nan = function (x) { return x !== nil && isNaN(x); };
   var is_truthy = function (x) { return x !== false && x !== null && x !== nil; };
   var is_falsy = function (x) { return x === false || x === null || x === nil; };
-  var head = function (x) { return is_cons(x) ? x.head : is_seq(x) ? x.head() : nil; };
-  var tail = function (x) { return is_cons(x) ? x.tail : is_seq(x) ? x.tail() : nil; };
+  var is_pair = function(x) { return is_cons(x) || is_lazy_seq(x) && is_cons(x.value()); };
+  var is_empty = function (x) { return is_null(x) || is_lazy_seq(x) && is_null(x.value()); };
+  var is_seq = function(x) { return is_pair(x) || is_empty(x); };
+  var head = function (x) { return is_cons(x) ? x.head : is_pair(x) ? x.head() : nil; };
+  var tail = function (x) { return is_cons(x) ? x.tail : is_pair(x) ? x.tail() : nil; };
+  var value = function (x) { return is_lazy_seq(x) ? x.value() : x; };
 
   // recursive descent parser
   var parse = (function () {
@@ -208,27 +210,8 @@ var COFY = (function (nil) {
     };
   }());
 
-  // serializer to a string
-  var print = (function () {
+  var printers = (function () {
     var escape_chars = { '\n': '\\n', '\r': '\\r', '\t': '\\t' };
-
-    var print = function (s_expr) {
-      if (is_string(s_expr))
-        return encode_string(s_expr);
-      if (is_symbol(s_expr))
-        return s_expr.name;
-      if (s_expr === null || is_cons(s_expr))
-        return print_list(s_expr);
-      return '' + s_expr;
-    };
-
-    var print_list = function (list) {
-      var strings = [], rest, tail;
-      for (rest = list; is_cons(rest); rest = rest.tail)
-        strings.push(print(rest.head));
-      tail = rest === null ? '' : ' : ' + print(rest);
-      return '(' + strings.join(' ') + tail + ')';
-    };
 
     var encode_string = function (s) {
       var key;
@@ -239,7 +222,45 @@ var COFY = (function (nil) {
       return '"' + s + '"';
     };
 
-    return print;
+    // serializer to a string
+    var print = function (x) {
+      if (is_string(x))
+        return encode_string(x);
+      if (is_symbol(x))
+        return x.name;
+      if (is_seq(x))
+        return print_seq(x);
+      return '' + value(x);
+    };
+
+    var print_seq = function (seq) {
+      var strings = [], rest, tail_string;
+      for (rest = seq; is_pair(rest); rest = tail(rest))
+        strings.push(print(head(rest)));
+      tail_string = is_empty(rest) ? '' : ' : ' + print(rest);
+      return '(' + strings.join(' ') + tail_string + ')';
+    };
+
+    // converter to a readable string
+    var show = function (x) {
+      if (is_string(x))
+        return encode_string(x);
+      if (is_symbol(x))
+        return x.name;
+      if (is_seq(x))
+        return show_seq(x, 100);
+      return '' + value(x);
+    };
+
+    var show_seq = function (seq, max) {
+      var i, strings = [], rest, tail_string;
+      for (i = 0, rest = seq; i < max && is_pair(rest); rest = tail(rest), i++)
+        strings.push(show(head(rest)));
+      tail_string = is_empty(rest) ? '' : i >= max ? ' …' : ' : ' + show(rest);
+      return '(' + strings.join(' ') + tail_string + ')';
+    };
+
+    return { print: print, show: show };
   }());
 
   var create_global_env = (function () {
@@ -271,15 +292,11 @@ var COFY = (function (nil) {
     };
 
     var equal = function (a, b) {
-      return a === b || is_seq(a) && is_seq(b) && seq_equal(a, b);
+      return value(a) === value(b) || is_seq(a) && is_seq(b) && seq_equal(a, b);
     };
 
     var seq_equal = function (a, b) {
-      return empty_seq(a) && empty_seq(b) || !empty_seq(a) && !empty_seq(b) && equal(head(a), head(b)) && equal(tail(a), tail(b));
-    };
-
-    var empty_seq = function (x) {
-      return x === null || is_lazy_seq(x) && x.value() === null;
+      return is_empty(a) && is_empty(b) || is_pair(a) && is_pair(b) && equal(head(a), head(b)) && equal(tail(a), tail(b));
     };
 
     var sum = function () {
@@ -334,9 +351,9 @@ var COFY = (function (nil) {
         return null;
       var f = function (seq) {
         var rest = seq;
-        while (is_seq_pair(rest) && is_falsy(fn(head(rest))))
+        while (is_pair(rest) && is_falsy(fn(head(rest))))
           rest = tail(rest);
-        if (is_seq_pair(rest))
+        if (is_pair(rest))
           return Cons(head(rest), LazySeq(function () { return f(tail(rest)); }));
         return rest === null || is_falsy(fn(rest)) ? null : rest;
       };
@@ -357,10 +374,10 @@ var COFY = (function (nil) {
       return array_to_list(values, any(is_null, args) ? null : apply(fn, args));
     };
 
-    var reduce_list = function (fn, value, list) {
-      for (var rest = list; is_cons(rest); rest = rest.tail)
-        value = fn(value, rest.head);
-      return rest === null || list === nil ? value : fn(value, rest);
+    var reduce_seq = function (fn, val, seq) {
+      for (var rest = seq; is_pair(rest); rest = tail(rest))
+        val = fn(val, head(rest));
+      return is_empty(rest) || seq === nil ? val : fn(val, value(rest));
     };
 
     var zip_lists = function (fn) {
@@ -454,7 +471,7 @@ var COFY = (function (nil) {
       'lazy-seq': LazySeq,
       'lazy-seq?': is_lazy_seq,
       'seq?': is_seq,
-      'empty?': empty_seq,
+      'empty?': is_empty,
       'realized?': function (x) { return is_lazy_seq(x) && x.realized(); },
       'first': head,
       'rest': tail,
@@ -486,7 +503,7 @@ var COFY = (function (nil) {
       'unschedule': function (id) { return clearTimeout(id); },
       'filter': filter_seq,
       'map': function (fn, list) { return arguments.length <= 2 ? map_list(fn, list) : apply(map_lists, arguments); },
-      'reduce': reduce_list,
+      'reduce': reduce_seq,
       'zip': zip_lists,
       'repeat': repeat_seq,
       'iterate': iterate_seq,
@@ -522,7 +539,7 @@ var COFY = (function (nil) {
         if (symbol.parts)
           return compile_symbol_parts(symbol, env);
         if (!(symbol.name in env))
-          runtime_error('Symbol "' + print(symbol) + '" not defined');
+          runtime_error('Symbol "' + show(symbol) + '" not defined');
         return env[symbol.name];
       };
     };
@@ -531,7 +548,7 @@ var COFY = (function (nil) {
       var i, parts = symbol.parts, context;
       for (i = 0; i < parts.length; i++) {
         if (!(parts[i] in obj))
-          runtime_error('Part "' + parts[i] + '" in "' + print(symbol) + '" not defined');
+          runtime_error('Part "' + parts[i] + '" in "' + show(symbol) + '" not defined');
         context = obj;
         obj = obj[parts[i]];
       }
@@ -672,17 +689,20 @@ var COFY = (function (nil) {
 
   return {
     read: parse,
-    print: print,
+    print: printers.print,
+    show: printers.show,
     compile: compile,
-    eval: function (s_expr) { return compile(s_expr)(); },
-    read_eval: function (s) { return compile(parse(s))(); },
-    read_eval_print: function (s) { return print(compile(parse(s))()); },
+    eval: function (s_expr) { return value(compile(s_expr)()); },
+    read_eval: function (s) { return value(compile(parse(s))()); },
+    read_eval_print: function (s) { return printers.print(compile(parse(s))()); },
+    read_eval_show: function (s) { return printers.show(compile(parse(s))()); },
     create: function (bindings) {
       var env = create_global_env(bindings);
       return {
-        eval: function (s_expr) { return compile(s_expr)(env); },
-        read_eval: function (s) { return compile(parse(s))(env); },
-        read_eval_print: function (s) { return print(compile(parse(s))(env)); }
+        eval: function (s_expr) { return value(compile(s_expr)(env)); },
+        read_eval: function (s) { return value(compile(parse(s))(env)); },
+        read_eval_print: function (s) { return printers.print(compile(parse(s))(env)); },
+        read_eval_show: function (s) { return printers.show(compile(parse(s))(env)); }
       }
     }
   };
