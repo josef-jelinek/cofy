@@ -348,12 +348,12 @@
             capabilities_path_access: function () {
               this.isSame(COFY.create({ o: { a: { b: 1 } }, c: [2, 'x'] }).read_eval('(+ o/a/b c/0)'), 3);
             },
-            object_midification: function () {
+            object_modification: function () {
               var obj1 = { field: 1 }, obj2 = COFY.read_eval("(fn (a) (set! a 'field 2) a)")(obj1);
               this.isSame(obj1, obj2);
               this.isSame(obj1.field, 2);
             },
-            array_midification: function () {
+            array_modification: function () {
               var arr1 = [0, 1], arr2 = COFY.read_eval('(fn (a) (set! a 1 2) a)')(arr1);
               this.isSame(arr1, arr2);
               this.isSame(arr1[1], 2);
