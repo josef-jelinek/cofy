@@ -4,7 +4,6 @@ to do:
   - regular expressions
   - static environment analysis -> syntax macros
   - a way for iteration (either trampoline or recur syntax)
-  - lazy sequences (another approach for iteration)
   - running scripts from application/x-cofy script tags
   - cofy function library
 
