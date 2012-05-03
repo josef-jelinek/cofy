@@ -24,12 +24,18 @@
           this.isSame(map.get('b'), 2);
           this.isSame(map.get('c'), 3);
         },
-        test_add_item: function () {
-          var map1 = FEAT.map();
-          var map2 = map1.assoc('a', 1);
-          this.isSame(map1.count(), 0);
-          this.isSame(map2.count(), 1);
-          this.isSame(map2.get('a'), 1);
+        test_get: function () {
+          var map = FEAT.map({a: 1, b: 2});
+          this.isSame(map.get('a'), 1);
+          this.isSame(map.get('b'), 2);
+          this.isUndefined(map.get('c'));
+          this.isSame(map.get('c', 3), 3);
+        },
+        test_contains: function () {
+          var map = FEAT.map({a: 1, b: 2});
+          this.isTrue(map.contains('a'));
+          this.isTrue(map.contains('b'));
+          this.isFalse(map.contains('c'));
         },
         test_add_items: function () {
           var i, a = ['y', 'a', 'c', 'z', 'b', 'x'];
@@ -41,14 +47,6 @@
           this.isSame(map2.count(), a.length);
           for (i = 0; i < a.length; i++)
             this.isSame(map2.get(a[i]), i + 1);
-        },
-        test_remove_item: function () {
-          var map1 = FEAT.map().assoc('a', 1);
-          var map2 = map1.dissoc('a');
-          this.isSame(map1.get('a'), 1);
-          this.isSame(map1.count(), 1);
-          this.isUndefined(map2.get('a'));
-          this.isSame(map2.count(), 0);
         },
         test_remove_items: function () {
           var i, a = ['c', 'z', 'y', 'a', 'x', 'b'];
