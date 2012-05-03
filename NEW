@@ -1,3 +1,8 @@
+2012-05-03
+
+    feat.js added - pure JavaScript persistent map implemented
+
+
 2012-05-01
 
     Lazy sequences. All list functions now accept/return lazy sequences (lazy-seq).
