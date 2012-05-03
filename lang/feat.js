@@ -166,12 +166,46 @@ var FEAT = (function (nil) {
     return map;
   };
 
+  var nap_copy = function (obj) {
+    var key, o = {};
+    if (obj)
+      for (key in obj)
+        if (is_own(obj, key))
+          o[key] = obj[key];
+    return o;
+  };
+
+  var Nap = function (obj) {
+    if (!is_nap(this))
+      return new Nap(freeze_object(obj));
+    this.contains = function (key) { return is_own(obj, key); };
+    this.get = function (key, fail) { return is_own(obj, key) ? obj[key] : fail; };
+    this.assoc = function (key, val) {
+      var o = nap_copy(obj);
+      o[key] = val;
+      return Nap(o);
+    };
+    this.dissoc = function (key) {
+      var o = nap_copy(obj);
+      delete o[key];
+      return Nap(o);
+    };
+    freeze_object(this);
+  };
+
+  var is_nap = function (x) { return x instanceof Nap; };
+
+  var create_nap = function (obj) {
+    return Nap(nap_copy(obj));
+  };
+
   var create_vec = function (arr) {
     return arr;
   };
 
   return freeze_object({
     map: create_map,
+    nap: create_nap,
     vector: create_vec
   });
 }());
