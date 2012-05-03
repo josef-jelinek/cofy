@@ -39,3 +39,7 @@ img/*              - graphics
 
 More information can be found at http://cofylang.org
 
+
+Feat.js - Persistent Data Structures for JavaScript
+
+This project also contains persistent map and vector (soon) source code independent of Cofy
