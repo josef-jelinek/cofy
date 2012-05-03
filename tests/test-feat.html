@@ -129,16 +129,92 @@
   <div class="download"><a href="../lang/feat.js">Download feat.js</a></div>
   <div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/lang/feat.js">feat.js on github</a></div>
   <div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/tests/test-feat.html">feat.js tests on github (this file)</a></div>
-  <div id="result"></div>
+  <div id="result" style="background: #6CF">Running tests...</div>
   <div id="log"></div>
+  <div id="time1"></div>
+  <div id="time2"></div>
+  <div id="time3"></div>
+  <div><button onclick="measure();">Measure performance</button></div>
   <script src="../tools/test.js"></script>
   <script src="../lang/feat.js"></script>
   <script>
+    function time(f) {
+      var time = new Date().getTime();
+      f();
+      return new Date().getTime() - time;
+    }
+
+    function time_native() {
+      var i, t = 0, n = 10000, o = {};
+      var wr = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          o['a' + i * 113 % n] = i;
+        for (i = 0; i < n; i++)
+          o['a' + i * 113 % n] = i + 1;
+      }));
+      var rd = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          t += o['a' + i];
+      }));
+      var rm = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          delete o['a' + i];
+      }));
+      return 'Native map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s';
+    }
+
+    function time_naive() {
+      var i, t = 0, n = 2000, map = FEAT.nap();
+      var wr = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          map = map.assoc('a' + i * 113 % n, i);
+        for (i = 0; i < n; i++)
+          map = map.assoc('a' + i * 113 % n, i + 1);
+      }));
+      var rd = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          t += map.get('a' + i);
+      }));
+      var rm = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          map = map.dissoc('a' + i);
+      }));
+      return 'Naive persistent map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s';
+    }
+
+    function time_persistent() {
+      var i, t = 0, n = 2000, map = FEAT.map();
+      var wr = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          map = map.assoc('a' + i * 113 % n, i);
+        for (i = 0; i < n; i++)
+          map = map.assoc('a' + i * 113 % n, i + 1);
+      }));
+      var rd = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          t += map.get('a' + i);
+      }));
+      var rm = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          map = map.dissoc('a' + i);
+      }));
+      return 'Persistent map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s';
+    }
+
     function run() {
       'use strict';
       var result = document.getElementById('result');
       var log = document.getElementById('log');
       TEST.init(result, log)(tests);
+    }
+
+    function measure() {
+      var time1 = document.getElementById('time1');
+      var time2 = document.getElementById('time2');
+      var time3 = document.getElementById('time3');
+      time3.innerHTML = time_persistent();
+      time2.innerHTML = time_naive();
+      time1.innerHTML = time_native();
     }
   </script>
 </body>
