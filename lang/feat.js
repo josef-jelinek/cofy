@@ -10,7 +10,7 @@ var FEAT = (function (nil) {
 
   var map_node = function (key, val, lo, hi) {
     var count = 1 + map_count(lo) + map_count(hi);
-    var depth = 1 + Math.max(map_depth(lo) + map_depth(hi));
+    var depth = 1 + Math.max(map_depth(lo), map_depth(hi));
     return freeze_object([key, val, lo, hi, count, depth]);
   };
 
@@ -23,10 +23,6 @@ var FEAT = (function (nil) {
   var map_with_lo_hi = function (node, lo, hi) { return map_node(map_key(node), map_val(node), lo, hi); };
   var map_with_lo = function (node, lo) { return map_with_lo_hi(node, lo, map_hi(node)); };
   var map_with_hi = function (node, hi) { return map_with_lo_hi(node, map_lo(node), hi); };
-
-  var map_depth = function (node) {
-    return node === nil ? 0 : 1 + Math.max(map_depth(map_lo(node)), map_depth(map_hi(node)));
-  };
 
   var map_has = function (node, key, lt) {
     if (node === nil)
@@ -60,13 +56,13 @@ var FEAT = (function (nil) {
       if (sub === node)
         return node;
       depth = map_depth(sub);
-      return depth > 3 && depth > map_depth(hi) * 1.5 ? map_rot_lo(node, sub) : map_with_lo(node, sub);
+      return depth > map_depth(hi) + 1 ? map_rot_lo(node, sub) : map_with_lo(node, sub);
     }
     sub = map_put(hi, key, val, lt);
     if (sub === node)
       return node;
     depth = map_depth(sub);
-    return depth > 3 && depth > map_depth(lo) * 1.5 ? map_rot_hi(node, sub) : map_with_hi(node, sub);
+    return depth > map_depth(lo) + 1 ? map_rot_hi(node, sub) : map_with_hi(node, sub);
   };
 
   var map_rot_lo = function (node, new_lo) {

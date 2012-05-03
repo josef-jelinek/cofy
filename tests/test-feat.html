@@ -76,19 +76,18 @@
               this.isUndefined(map2.get(a[i]));
           },
           ballances_low_depth: function () {
-            var i;
-            var map = FEAT.map();
+            var i, map = FEAT.map();
             for (i = 0; i < 301; i++)
               map = map.assoc('a' + i, i + 1);
-            this.isTrue(map.depth() < 15);
+            this.isTrue(map.depth() < 13);
             map = FEAT.map();
             for (i = 0; i < 301; i++)
               map = map.assoc('a' + (300 - i), i + 1);
-            this.isTrue(map.depth() < 15);
+            this.isTrue(map.depth() < 13);
             map = FEAT.map();
             for (i = 0; i < 301; i++)
               map = map.assoc('a' + (Math.random() * 1000 | 0), i + 1);
-            this.isTrue(map.depth() < 15);
+            this.isTrue(map.depth() < 13);
           },
           convert_to_object: function () {
             var key, o1 = { a: 1, b: 2, c: 3 }, o2 = FEAT.map(o1).toObject();
