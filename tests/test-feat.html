@@ -13,31 +13,41 @@
     var tests = (function (nil) {
       'use strict';
       return {
-        test_create_empty: function () {
+        create_empty: function () {
           this.isSame(FEAT.map().count(), 0);
           this.isSame(FEAT.map({}).count(), 0);
         },
-        test_create_from_object: function () {
+        create_from_object: function () {
           var map = FEAT.map({a: 1, b: 2, c: 3});
           this.isSame(map.count(), 3);
           this.isSame(map.get('a'), 1);
           this.isSame(map.get('b'), 2);
           this.isSame(map.get('c'), 3);
         },
-        test_get: function () {
+        depth_grows: function () {
+          var map = FEAT.map();
+          this.isSame(map.depth(), 0);
+          map = map.assoc('a', 1);
+          this.isSame(map.depth(), 1);
+          map = map.assoc('b', 2);
+          this.isSame(map.depth(), 2);
+          map = map.assoc('c', 3).assoc('d', 4);
+          this.isTrue(map.depth() >= 3);
+        },
+        retrieve_item: function () {
           var map = FEAT.map({a: 1, b: 2});
           this.isSame(map.get('a'), 1);
           this.isSame(map.get('b'), 2);
           this.isUndefined(map.get('c'));
           this.isSame(map.get('c', 3), 3);
         },
-        test_contains: function () {
+        contains_item: function () {
           var map = FEAT.map({a: 1, b: 2});
           this.isTrue(map.contains('a'));
           this.isTrue(map.contains('b'));
           this.isFalse(map.contains('c'));
         },
-        test_add_items: function () {
+        adding_items: function () {
           var i, a = ['y', 'a', 'c', 'z', 'b', 'x'];
           var map1 = FEAT.map();
           var map2 = map1;
@@ -48,7 +58,7 @@
           for (i = 0; i < a.length; i++)
             this.isSame(map2.get(a[i]), i + 1);
         },
-        test_remove_items: function () {
+        removing_items: function () {
           var i, a = ['c', 'z', 'y', 'a', 'x', 'b'];
           var map1 = FEAT.map();
           for (i = 0; i < a.length; i++)
@@ -60,6 +70,34 @@
           this.isSame(map2.count(), 0);
           for (i = 0; i < a.length; i++)
             this.isUndefined(map2.get(a[i]));
+        },
+        ballances_low_depth: function () {
+          var i;
+          var map = FEAT.map();
+          for (i = 0; i < 301; i++)
+            map = map.assoc('a' + i, i + 1);
+          this.isTrue(map.depth() < 15);
+          map = FEAT.map();
+          for (i = 0; i < 301; i++)
+            map = map.assoc('a' + (300 - i), i + 1);
+          this.isTrue(map.depth() < 15);
+          map = FEAT.map();
+          for (i = 0; i < 301; i++)
+            map = map.assoc('a' + (Math.random() * 1000 | 0), i + 1);
+          this.isTrue(map.depth() < 15);
+        },
+        convert_to_object: function () {
+          var key, o1 = { a: 1, b: 2, c: 3 }, o2 = FEAT.map(o1).toObject();
+          this.isNotSame(o1, o2);
+          for (key in o1)
+            this.isSame(o1[key], o2[key]);
+          for (key in o2)
+            this.isSame(o2[key], o1[key]);
+        },
+        convert_to_string: function () {
+          var map = FEAT.map({ c: 3, a: 1, b: 2 });
+          this.isSame(map.toString(), '{ a: 1, b: 2, c: 3 }');
+          this.isSame(FEAT.map().toString(), '{ }');
         }
       };
     }());

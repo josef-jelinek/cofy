@@ -6,8 +6,9 @@ var FEAT = (function (nil) {
   var toss = function () { return Math.random() < 0.5; };
 
   var map_node = function (key, val, lo, hi) {
-    var count = map_count(lo) + map_count(hi) + (key !== nil ? 1 : 0);
-    return freeze_object([key, val, lo, hi, count]);
+    var count = 1 + map_count(lo) + map_count(hi);
+    var depth = 1 + Math.max(map_depth(lo) + map_depth(hi));
+    return freeze_object([key, val, lo, hi, count, depth]);
   };
 
   var map_key = function (node) { return node[0]; };
@@ -15,9 +16,14 @@ var FEAT = (function (nil) {
   var map_lo = function (node) { return node[2]; };
   var map_hi = function (node) { return node[3]; };
   var map_count = function (node) { return node === nil ? 0 : node[4]; };
+  var map_depth = function (node) { return node === nil ? 0 : node[5]; };
   var map_with_lo_hi = function (node, lo, hi) { return map_node(map_key(node), map_val(node), lo, hi); };
   var map_with_lo = function (node, lo) { return map_with_lo_hi(node, lo, map_hi(node)); };
   var map_with_hi = function (node, hi) { return map_with_lo_hi(node, map_lo(node), hi); };
+
+  var map_depth = function (node) {
+    return node === nil ? 0 : 1 + Math.max(map_depth(map_lo(node)), map_depth(map_hi(node)));
+  };
 
   var map_has = function (node, key) {
     if (node === nil)
@@ -43,13 +49,27 @@ var FEAT = (function (nil) {
     var lo = map_lo(node), hi = map_hi(node);
     if (key === map_key(node))
       return map_node(key, val, lo, hi);
-    var sub;
+    var sub, depth;
     if (key < map_key(node)) {
       sub = map_put(lo, key, val);
-      return sub === lo ? node : map_with_lo(node, sub);
+      if (sub === node)
+        return node;
+      depth = map_depth(sub);
+      return depth > 3 && depth > map_depth(hi) * 1.5 ? map_rot_lo(node, sub) : map_with_lo(node, sub);
     }
     sub = map_put(hi, key, val);
-    return sub === hi ? node : map_with_hi(node, sub);
+    if (sub === node)
+      return node;
+    depth = map_depth(sub);
+    return depth > 3 && depth > map_depth(lo) * 1.5 ? map_rot_hi(node, sub) : map_with_hi(node, sub);
+  };
+
+  var map_rot_lo = function (node, new_lo) {
+    return map_with_hi(new_lo, map_with_lo(node, map_hi(new_lo)));
+  };
+
+  var map_rot_hi = function (node, new_hi) {
+    return map_with_lo(new_hi, map_with_hi(node, map_lo(new_hi)));
   };
 
   var map_rm = function (node, key) {
@@ -77,21 +97,37 @@ var FEAT = (function (nil) {
     return map_with_lo_hi(hi, map_lo(node), map_rm(map_hi(node), map_key(hi)));
   };
 
+  var map_to_object = function (node, o) {
+    if (node !== nil) {
+      map_to_object(map_lo(node), o);
+      o[map_key(node)] = map_val(node);
+      map_to_object(map_hi(node), o);
+    }
+    return o;
+  };
+
   var map_print = function (node) {
     if (node === nil)
-      return '-';
-    return '(' + map_print(map_lo(node)) + ' ' + map_key(node) + ' ' + map_print(map_hi(node)) + ')';
+      return '';
+    var s = map_print(map_lo(node)), t = map_print(map_hi(node));
+    if (s !== '')
+      s = s + ','
+    if (t !== '')
+      t = ',' + t;
+    return s + ' ' + map_key(node) + ': ' + map_val(node) + t;
   };
 
   var Map = function (node) {
     if (!is_map(this))
       return new Map(node);
     this.count = function () { return map_count(node); };
+    this.depth = function () { return map_depth(node); };
     this.contains = function (key) { return map_has(node, key); };
     this.get = function (key, fail) { return map_get(node, key, fail); };
     this.assoc = function (key, val) { return create_map_if_new(this, node, map_put(node, key, val)); };
     this.dissoc = function (key) { return create_map_if_new(this, node, map_rm(node, key)); };
-    this.toString = function () { return map_print(node); };
+    this.toObject = function (into) { return map_to_object(node, into || {}); };
+    this.toString = function () { return '{' + map_print(node) + ' }'; };
     freeze_object(this);
   };
 
