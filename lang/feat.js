@@ -1,3 +1,6 @@
+// 2012-05-03 Persistent data structures for JavaScript
+// Josef Jelinek josef.jelinek@gmail.com
+// Public domain
 var FEAT = (function (nil) {
   'use strict';
 
@@ -25,23 +28,25 @@ var FEAT = (function (nil) {
     return node === nil ? 0 : 1 + Math.max(map_depth(map_lo(node)), map_depth(map_hi(node)));
   };
 
-  var map_has = function (node, key) {
+  var map_has = function (node, key, lt) {
     if (node === nil)
       return false;
     if (key === map_key(node))
       return true;
-    return key < map_key(node) ? map_has(map_lo(node), key) : map_has(map_hi(node), key);
+    var go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
+    return go_lo ? map_has(map_lo(node), key, lt) : map_has(map_hi(node), key, lt);
   };
 
-  var map_get = function (node, key, fail) {
+  var map_get = function (node, key, fail, lt) {
     if (node === nil)
       return fail;
     if (key === map_key(node))
       return map_val(node);
-    return key < map_key(node) ? map_get(map_lo(node), key, fail) : map_get(map_hi(node), key, fail);
+    var go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
+    return go_lo ? map_get(map_lo(node), key, fail, lt) : map_get(map_hi(node), key, fail, lt);
   };
 
-  var map_put = function (node, key, val) {
+  var map_put = function (node, key, val, lt) {
     if (node === nil)
       return map_node(key, val);
     if (key === map_key(node) && val === map_val(node))
@@ -49,15 +54,15 @@ var FEAT = (function (nil) {
     var lo = map_lo(node), hi = map_hi(node);
     if (key === map_key(node))
       return map_node(key, val, lo, hi);
-    var sub, depth;
-    if (key < map_key(node)) {
-      sub = map_put(lo, key, val);
+    var sub, depth, go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
+    if (go_lo) {
+      sub = map_put(lo, key, val, lt);
       if (sub === node)
         return node;
       depth = map_depth(sub);
       return depth > 3 && depth > map_depth(hi) * 1.5 ? map_rot_lo(node, sub) : map_with_lo(node, sub);
     }
-    sub = map_put(hi, key, val);
+    sub = map_put(hi, key, val, lt);
     if (sub === node)
       return node;
     depth = map_depth(sub);
@@ -72,29 +77,47 @@ var FEAT = (function (nil) {
     return map_with_lo(new_hi, map_with_hi(node, map_lo(new_hi)));
   };
 
-  var map_rm = function (node, key) {
+  var map_rm = function (node, key, lt) {
     if (node === nil)
       return nil;
     var lo = map_lo(node), hi = map_hi(node);
     if (key === map_key(node))
-      return !lo || !hi ? lo || hi : (toss() ? map_rm_lo(node, key) : map_rm_hi(node, key));
-    var sub;
-    if (key < map_key(node)) {
-      sub = map_rm(lo, key);
+      return !lo || !hi ? lo || hi : (toss() ? map_rm_lo(node, key, lt) : map_rm_hi(node, key, lt));
+    var sub, go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
+    if (go_lo) {
+      sub = map_rm(lo, key, lt);
       return sub === lo ? node : map_with_lo(node, sub);
     }
-    sub = map_rm(hi, key);
+    sub = map_rm(hi, key, lt);
     return sub === hi ? node : map_with_hi(node, sub);
   };
 
-  var map_rm_lo = function (node, key) {
+  var map_rm_lo = function (node, key, lt) {
     for (var lo = map_lo(node); map_hi(lo) !== nil; lo = map_hi(lo)) ;
-    return map_with_lo_hi(lo, map_rm(map_lo(node), map_key(lo)), map_hi(node));
+    return map_with_lo_hi(lo, map_rm(map_lo(node), map_key(lo), lt), map_hi(node));
   };
 
-  var map_rm_hi = function (node, key) {
+  var map_rm_hi = function (node, key, lt) {
     for (var hi = map_hi(node); map_lo(hi) !== nil; hi = map_lo(hi)) ;
-    return map_with_lo_hi(hi, map_lo(node), map_rm(map_hi(node), map_key(hi)));
+    return map_with_lo_hi(hi, map_lo(node), map_rm(map_hi(node), map_key(hi), lt));
+  };
+
+  var map_keys = function (node, a) {
+    if (node !== nil) {
+      map_keys(map_lo(node), a);
+      a.push(map_key(node));
+      map_keys(map_hi(node), a);
+    }
+    return a;
+  };
+
+  var map_values = function (node, a) {
+    if (node !== nil) {
+      map_values(map_lo(node), a);
+      a.push(map_val(node));
+      map_values(map_hi(node), a);
+    }
+    return a;
   };
 
   var map_to_object = function (node, o) {
@@ -117,15 +140,17 @@ var FEAT = (function (nil) {
     return s + ' ' + map_key(node) + ': ' + map_val(node) + t;
   };
 
-  var Map = function (node) {
+  var Map = function (node, lt) {
     if (!is_map(this))
-      return new Map(node);
+      return new Map(node, lt);
     this.count = function () { return map_count(node); };
     this.depth = function () { return map_depth(node); };
-    this.contains = function (key) { return map_has(node, key); };
-    this.get = function (key, fail) { return map_get(node, key, fail); };
-    this.assoc = function (key, val) { return create_map_if_new(this, node, map_put(node, key, val)); };
-    this.dissoc = function (key) { return create_map_if_new(this, node, map_rm(node, key)); };
+    this.contains = function (key) { return map_has(node, key, lt); };
+    this.get = function (key, fail) { return map_get(node, key, fail, lt); };
+    this.assoc = function (key, val) { return create_map_if_new(this, node, map_put(node, key, val, lt), lt); };
+    this.dissoc = function (key) { return create_map_if_new(this, node, map_rm(node, key, lt), lt); };
+    this.keys = function (into) { return map_keys(node, into || []); };
+    this.values = function (into) { return map_values(node, into || []); };
     this.toObject = function (into) { return map_to_object(node, into || {}); };
     this.toString = function () { return '{' + map_print(node) + ' }'; };
     freeze_object(this);
@@ -133,12 +158,12 @@ var FEAT = (function (nil) {
 
   var is_map = function (x) { return x instanceof Map; };
 
-  var create_map_if_new = function (map, node, new_node) {
-    return node === new_node ? map : Map(new_node);
+  var create_map_if_new = function (map, node, new_node, lt) {
+    return node === new_node ? map : Map(new_node, lt);
   };
 
-  var create_map = function (obj) {
-    var key, map = Map();
+  var create_map = function (obj, lt) {
+    var key, map = Map(nil, lt);
     for (key in obj)
       if (is_own(obj, key))
         map = map.assoc(key, obj[key]);
