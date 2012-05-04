@@ -164,7 +164,7 @@
     }
 
     function time_naive() {
-      var i, t = 0, n = 2000, map = FEAT.nap();
+      var i, t = 0, n = 1000, map = FEAT.nap();
       var wr = Math.round(n * 1000 / time(function () {
         for (i = 0; i < n; i++)
           map = map.assoc('a' + i * 113 % n, i);
@@ -183,7 +183,7 @@
     }
 
     function time_persistent() {
-      var i, t = 0, n = 2000, map = FEAT.map();
+      var i, t = 0, n = 1000, map = FEAT.map();
       var wr = Math.round(n * 1000 / time(function () {
         for (i = 0; i < n; i++)
           map = map.assoc('a' + i * 113 % n, i);
@@ -212,9 +212,9 @@
       var time1 = document.getElementById('time1');
       var time2 = document.getElementById('time2');
       var time3 = document.getElementById('time3');
-      time3.innerHTML = time_persistent();
-      time2.innerHTML = time_naive();
       time1.innerHTML = time_native();
+      time2.innerHTML = time_naive();
+      time3.innerHTML = time_persistent();
     }
   </script>
 </body>
