@@ -11,46 +11,42 @@ var FEAT = (function (nil) {
   var map_node = function (key, val, lo, hi) {
     var count = 1 + map_count(lo) + map_count(hi);
     var depth = 1 + Math.max(map_depth(lo), map_depth(hi));
-    return freeze_object([key, val, lo, hi, count, depth]);
+    return freeze_object({ key: key, val: val, lo: lo, hi: hi, count: count, depth: depth });
   };
 
-  var map_key = function (node) { return node[0]; };
-  var map_val = function (node) { return node[1]; };
-  var map_lo = function (node) { return node[2]; };
-  var map_hi = function (node) { return node[3]; };
-  var map_count = function (node) { return node === nil ? 0 : node[4]; };
-  var map_depth = function (node) { return node === nil ? 0 : node[5]; };
-  var map_with_lo_hi = function (node, lo, hi) { return map_node(map_key(node), map_val(node), lo, hi); };
-  var map_with_lo = function (node, lo) { return map_with_lo_hi(node, lo, map_hi(node)); };
-  var map_with_hi = function (node, hi) { return map_with_lo_hi(node, map_lo(node), hi); };
+  var map_count = function (node) { return node === nil ? 0 : node.count; };
+  var map_depth = function (node) { return node === nil ? 0 : node.depth; };
+  var map_with_lo_hi = function (node, lo, hi) { return map_node(node.key, node.val, lo, hi); };
+  var map_with_lo = function (node, lo) { return map_with_lo_hi(node, lo, node.hi); };
+  var map_with_hi = function (node, hi) { return map_with_lo_hi(node, node.lo, hi); };
 
   var map_has = function (node, key, lt) {
     if (node === nil)
       return false;
-    if (key === map_key(node))
+    if (key === node.key)
       return true;
-    var go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
-    return go_lo ? map_has(map_lo(node), key, lt) : map_has(map_hi(node), key, lt);
+    var go_lo = lt && lt(key, node.key) || !lt && key < node.key;
+    return go_lo ? map_has(node.lo, key, lt) : map_has(node.hi, key, lt);
   };
 
   var map_get = function (node, key, fail, lt) {
     if (node === nil)
       return fail;
-    if (key === map_key(node))
-      return map_val(node);
-    var go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
-    return go_lo ? map_get(map_lo(node), key, fail, lt) : map_get(map_hi(node), key, fail, lt);
+    if (key === node.key)
+      return node.val;
+    var go_lo = lt && lt(key, node.key) || !lt && key < node.key;
+    return go_lo ? map_get(node.lo, key, fail, lt) : map_get(node.hi, key, fail, lt);
   };
 
   var map_put = function (node, key, val, lt) {
     if (node === nil)
       return map_node(key, val);
-    if (key === map_key(node) && val === map_val(node))
+    if (key === node.key && val === node.val)
       return node;
-    var lo = map_lo(node), hi = map_hi(node);
-    if (key === map_key(node))
+    var lo = node.lo, hi = node.hi;
+    if (key === node.key)
       return map_node(key, val, lo, hi);
-    var sub, depth, go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
+    var sub, depth, go_lo = lt && lt(key, node.key) || !lt && key < node.key;
     if (go_lo) {
       sub = map_put(lo, key, val, lt);
       if (sub === node)
@@ -66,20 +62,20 @@ var FEAT = (function (nil) {
   };
 
   var map_rot_lo = function (node, new_lo) {
-    return map_with_hi(new_lo, map_with_lo(node, map_hi(new_lo)));
+    return map_with_hi(new_lo, map_with_lo(node, new_lo.hi));
   };
 
   var map_rot_hi = function (node, new_hi) {
-    return map_with_lo(new_hi, map_with_hi(node, map_lo(new_hi)));
+    return map_with_lo(new_hi, map_with_hi(node, new_hi.lo));
   };
 
   var map_rm = function (node, key, lt) {
     if (node === nil)
       return nil;
-    var lo = map_lo(node), hi = map_hi(node);
-    if (key === map_key(node))
+    var lo = node.lo, hi = node.hi;
+    if (key === node.key)
       return !lo || !hi ? lo || hi : (toss() ? map_rm_lo(node, key, lt) : map_rm_hi(node, key, lt));
-    var sub, go_lo = lt && lt(key, map_key(node)) || !lt && key < map_key(node);
+    var sub, go_lo = lt && lt(key, node.key) || !lt && key < node.key;
     if (go_lo) {
       sub = map_rm(lo, key, lt);
       return sub === lo ? node : map_with_lo(node, sub);
@@ -89,38 +85,38 @@ var FEAT = (function (nil) {
   };
 
   var map_rm_lo = function (node, key, lt) {
-    for (var lo = map_lo(node); map_hi(lo) !== nil; lo = map_hi(lo)) ;
-    return map_with_lo_hi(lo, map_rm(map_lo(node), map_key(lo), lt), map_hi(node));
+    for (var lo = node.lo; lo.hi !== nil; lo = lo.hi) ;
+    return map_with_lo_hi(lo, map_rm(node.lo, lo.key, lt), node.hi);
   };
 
   var map_rm_hi = function (node, key, lt) {
-    for (var hi = map_hi(node); map_lo(hi) !== nil; hi = map_lo(hi)) ;
-    return map_with_lo_hi(hi, map_lo(node), map_rm(map_hi(node), map_key(hi), lt));
+    for (var hi = node.hi; hi.lo !== nil; hi = hi.lo) ;
+    return map_with_lo_hi(hi, node.lo, map_rm(node.hi, hi.key, lt));
   };
 
   var map_keys = function (node, a) {
     if (node !== nil) {
-      map_keys(map_lo(node), a);
-      a.push(map_key(node));
-      map_keys(map_hi(node), a);
+      map_keys(node.lo, a);
+      a.push(node.key);
+      map_keys(node.hi, a);
     }
     return a;
   };
 
   var map_values = function (node, a) {
     if (node !== nil) {
-      map_values(map_lo(node), a);
-      a.push(map_val(node));
-      map_values(map_hi(node), a);
+      map_values(node.lo, a);
+      a.push(node.val);
+      map_values(node.hi, a);
     }
     return a;
   };
 
   var map_to_object = function (node, o) {
     if (node !== nil) {
-      map_to_object(map_lo(node), o);
-      o[map_key(node)] = map_val(node);
-      map_to_object(map_hi(node), o);
+      map_to_object(node.lo, o);
+      o[node.key] = node.val;
+      map_to_object(node.hi, o);
     }
     return o;
   };
@@ -128,12 +124,12 @@ var FEAT = (function (nil) {
   var map_print = function (node) {
     if (node === nil)
       return '';
-    var s = map_print(map_lo(node)), t = map_print(map_hi(node));
+    var s = map_print(node.lo), t = map_print(node.hi);
     if (s !== '')
       s = s + ','
     if (t !== '')
       t = ',' + t;
-    return s + ' ' + map_key(node) + ': ' + map_val(node) + t;
+    return s + ' ' + node.key + ': ' + node.val + t;
   };
 
   var Map = function (node, lt) {
@@ -175,21 +171,26 @@ var FEAT = (function (nil) {
     return o;
   };
 
+  var nap_assoc = function (obj, key, val) {
+    var o = nap_copy(obj);
+    o[key] = val;
+    return freeze_object(o);
+  };
+
+  var nap_dissoc = function (obj, key) {
+    var o = nap_copy(obj);
+    delete o[key];
+    return freeze_object(o);
+  };
+
   var Nap = function (obj) {
     if (!is_nap(this))
       return new Nap(freeze_object(obj));
     this.contains = function (key) { return is_own(obj, key); };
     this.get = function (key, fail) { return is_own(obj, key) ? obj[key] : fail; };
-    this.assoc = function (key, val) {
-      var o = nap_copy(obj);
-      o[key] = val;
-      return Nap(o);
-    };
-    this.dissoc = function (key) {
-      var o = nap_copy(obj);
-      delete o[key];
-      return Nap(o);
-    };
+    this.assoc = function (key, val) { return Nap(nap_assoc(obj, key, val)); };
+    this.dissoc = function (key) { return Nap(nap_dissoc(obj, key)); };
+    this.toObject = function (into) { return nap_copy(obj); };
     freeze_object(this);
   };
 
@@ -206,6 +207,8 @@ var FEAT = (function (nil) {
   return freeze_object({
     map: create_map,
     nap: create_nap,
+    assoc: nap_assoc,
+    dissoc: nap_dissoc,
     vector: create_vec
   });
 }());

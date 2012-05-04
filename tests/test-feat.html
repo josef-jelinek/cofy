@@ -119,6 +119,58 @@
             this.isSame(map.values().toString(), '1,3,2');
           }
         },
+        naive_native_map: {
+          adding_items: function () {
+            var i, a = ['y', 'a', 'c', 'z', 'b', 'x'];
+            var map1 = FEAT.nap();
+            var map2 = map1;
+            for (i = 0; i < a.length; i++)
+              map2 = map2.assoc(a[i], i + 1);
+            this.isNotSame(map1, map2);
+            for (i = 0; i < a.length; i++)
+              this.isUndefined(map1.get(a[i]));
+            for (i = 0; i < a.length; i++)
+              this.isSame(map2.get(a[i]), i + 1);
+          },
+          removing_items: function () {
+            var i, a = ['c', 'z', 'y', 'a', 'x', 'b'];
+            var map1 = FEAT.nap();
+            for (i = 0; i < a.length; i++)
+              map1 = map1.assoc(a[i], i + 1);
+            var map2 = map1;
+            for (i = 0; i < a.length; i++)
+              map2 = map2.dissoc(a[i]);
+            for (i = 0; i < a.length; i++)
+              this.isSame(map1.get(a[i]), i + 1);
+            for (i = 0; i < a.length; i++)
+              this.isUndefined(map2.get(a[i]));
+          },
+          adding_items_directly: function () {
+            var i, a = ['y', 'a', 'c', 'z', 'b', 'x'];
+            var map1 = {};
+            var map2 = map1;
+            for (i = 0; i < a.length; i++)
+              map2 = FEAT.assoc(map2, a[i], i + 1);
+            this.isNotSame(map1, map2);
+            for (i = 0; i < a.length; i++)
+              this.isUndefined(map1[a[i]]);
+            for (i = 0; i < a.length; i++)
+              this.isSame(map2[a[i]], i + 1);
+          },
+          removing_items_directly: function () {
+            var i, a = ['c', 'z', 'y', 'a', 'x', 'b'];
+            var map1 = {};
+            for (i = 0; i < a.length; i++)
+              map1 = FEAT.assoc(map1, a[i], i + 1);
+            var map2 = map1;
+            for (i = 0; i < a.length; i++)
+              map2 = FEAT.dissoc(map2, a[i]);
+            for (i = 0; i < a.length; i++)
+              this.isSame(map1[a[i]], i + 1);
+            for (i = 0; i < a.length; i++)
+              this.isUndefined(map2[a[i]]);
+          }
+        },
         vector: {}
       };
     }());
