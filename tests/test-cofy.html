@@ -331,7 +331,7 @@
               this.isTrue(COFY.read_eval('(empty? (skip nil (iterate inc 1)))'));
               this.isTrue(COFY.read_eval("(lazy-seq? (skip 3 '(1 2 3 4 5)))"));
               this.isTrue(COFY.read_eval("(= (skip 3 '(1 2 3 4 5)) '(4 5))"));
-            },
+            }
           },
           interop: {
             functions: function () {
