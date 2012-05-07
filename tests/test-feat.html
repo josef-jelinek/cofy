@@ -68,7 +68,14 @@
             for (i = 0; i < a.length; i++)
               map1 = map1.assoc(a[i], i + 1);
             var map2 = map1;
-            for (i = 0; i < a.length; i++)
+            for (i = 0; i < a.length / 2 | 0; i++)
+              map2 = map2.dissoc(a[i]);
+            this.isSame(map2.count(), a.length / 2 | 0);
+            for (i = 0; i < a.length / 2 | 0; i++)
+              this.isUndefined(map2.get(a[i]));
+            for (i = a.length / 2 | 0; i < a.length; i++)
+              this.isSame(map2.get(a[i]), i + 1);
+            for (i = a.length / 2 | 0; i < a.length; i++)
               map2 = map2.dissoc(a[i]);
             this.isSame(map1.count(), a.length);
             this.isSame(map2.count(), 0);
@@ -138,7 +145,13 @@
             for (i = 0; i < a.length; i++)
               map1 = map1.assoc(a[i], i + 1);
             var map2 = map1;
-            for (i = 0; i < a.length; i++)
+            for (i = 0; i < a.length / 2 | 0; i++)
+              map2 = map2.dissoc(a[i]);
+            for (i = 0; i < a.length / 2 | 0; i++)
+              this.isUndefined(map2.get(a[i]));
+            for (i = a.length / 2 | 0; i < a.length; i++)
+              this.isSame(map2.get(a[i]), i + 1);
+            for (i = a.length / 2 | 0; i < a.length; i++)
               map2 = map2.dissoc(a[i]);
             for (i = 0; i < a.length; i++)
               this.isSame(map1.get(a[i]), i + 1);
@@ -163,12 +176,51 @@
             for (i = 0; i < a.length; i++)
               map1 = FEAT.assoc(map1, a[i], i + 1);
             var map2 = map1;
-            for (i = 0; i < a.length; i++)
+            for (i = 0; i < a.length / 2 | 0; i++)
+              map2 = FEAT.dissoc(map2, a[i]);
+            for (i = 0; i < a.length / 2 | 0; i++)
+              this.isUndefined(map2[a[i]]);
+            for (i = a.length / 2 | 0; i < a.length; i++)
+              this.isSame(map2[a[i]], i + 1);
+            for (i = a.length / 2 | 0; i < a.length; i++)
               map2 = FEAT.dissoc(map2, a[i]);
             for (i = 0; i < a.length; i++)
               this.isSame(map1[a[i]], i + 1);
             for (i = 0; i < a.length; i++)
               this.isUndefined(map2[a[i]]);
+          }
+        },
+        bb_map: {
+          adding_items: function () {
+            var i, a = ['y', 'a', 'c', 'z', 'b', 'x'];
+            var map1 = FEAT_BB.map();
+            var map2 = map1;
+            for (i = 0; i < a.length; i++)
+              map2 = map2.assoc(a[i], i + 1);
+            this.isNotSame(map1, map2);
+            for (i = 0; i < a.length; i++)
+              this.isUndefined(map1.get(a[i]));
+            for (i = 0; i < a.length; i++)
+              this.isSame(map2.get(a[i]), i + 1);
+          },
+          removing_items: function () {
+            var i, a = ['c', 'z', 'y', 'a', 'x', 'b'];
+            var map1 = FEAT_BB.map();
+            for (i = 0; i < a.length; i++)
+              map1 = map1.assoc(a[i], i + 1);
+            var map2 = map1;
+            for (i = 0; i < a.length / 2 | 0; i++)
+              map2 = map2.dissoc(a[i]);
+            for (i = 0; i < a.length / 2 | 0; i++)
+              this.isUndefined(map2.get(a[i]));
+            for (i = a.length / 2 | 0; i < a.length; i++)
+              this.isSame(map2.get(a[i]), i + 1);
+            for (i = a.length / 2 | 0; i < a.length; i++)
+              map2 = map2.dissoc(a[i]);
+            for (i = 0; i < a.length; i++)
+              this.isSame(map1.get(a[i]), i + 1);
+            for (i = 0; i < a.length; i++)
+              this.isUndefined(map2.get(a[i]));
           }
         },
         vector: {}
@@ -186,9 +238,11 @@
   <div id="time1"></div>
   <div id="time2"></div>
   <div id="time3"></div>
+  <div id="time4"></div>
   <div><button onclick="measure();">Measure performance</button></div>
   <script src="../tools/test.js"></script>
   <script src="../lang/feat.js"></script>
+  <script src="../lang/feat-bb-map.js"></script>
   <script>
     function time(f) {
       var time = new Date().getTime();
@@ -212,11 +266,11 @@
         for (i = 0; i < n; i++)
           delete o['a' + i];
       }));
-      return 'Native map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s';
+      return 'Native map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
     }
 
     function time_naive() {
-      var i, t = 0, n = 1000, map = FEAT.nap();
+      var i, t = 0, n = 200, map = FEAT.nap();
       var wr = Math.round(n * 1000 / time(function () {
         for (i = 0; i < n; i++)
           map = map.assoc('a' + i * 113 % n, i);
@@ -231,7 +285,7 @@
         for (i = 0; i < n; i++)
           map = map.dissoc('a' + i);
       }));
-      return 'Naive persistent map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s';
+      return 'Naive persistent map: ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
     }
 
     function time_persistent() {
@@ -250,7 +304,26 @@
         for (i = 0; i < n; i++)
           map = map.dissoc('a' + i);
       }));
-      return 'Persistent map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s';
+      return 'Persistent map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
+    }
+
+    function time_bb_persistent() {
+      var i, t = 0, n = 1000, map = FEAT_BB.map();
+      var wr = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          map = map.assoc('a' + i * 113 % n, i);
+        for (i = 0; i < n; i++)
+          map = map.assoc('a' + i * 113 % n, i + 1);
+      }));
+      var rd = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          t += map.get('a' + i);
+      }));
+      var rm = Math.round(n * 1000 / time(function () {
+        for (i = 0; i < n; i++)
+          map = map.dissoc('a' + i);
+      }));
+      return 'Persistent BB map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
     }
 
     function run() {
@@ -264,9 +337,11 @@
       var time1 = document.getElementById('time1');
       var time2 = document.getElementById('time2');
       var time3 = document.getElementById('time3');
+      var time4 = document.getElementById('time4');
       time1.innerHTML = time_native();
       time2.innerHTML = time_naive();
       time3.innerHTML = time_persistent();
+      time4.innerHTML = time_bb_persistent();
     }
   </script>
 </body>

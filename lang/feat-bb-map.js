@@ -11,7 +11,11 @@ var FEAT_BB = (function (nil) {
     return freeze_object({ key: key, val: val, lev: lev, lo: lo, hi: hi });
   };
 
-  var go_lo = function (node, lt) { return lt && lt(key, node.key) || !lt && key < node.key; };
+  var with_lev = function (node, lev) { return new_node(node.key, node.val, lev, node.lo, node.hi); };
+  var with_lo_hi = function (node, lo, hi) { return new_node(node.key, node.val, node.lev, lo, hi); };
+  var with_lo = function (node, lo) { return lo === node.lo ? node : with_lo_hi(node, lo, node.hi); };
+  var with_hi = function (node, hi) { return hi === node.hi ? node : with_lo_hi(node, node.lo, hi); };
+  var go_lo = function (node, key, lt) { return lt && lt(key, node.key) || !lt && key < node.key; };
 
   var has = function (node, key, lt) {
     while (node) {
@@ -32,23 +36,48 @@ var FEAT_BB = (function (nil) {
   };
 
   var put = function (node, key, val, lt) {
+    if (!node)
+      return new_node(key, val, 0);
+    if (key === node.key)
+      return val === node.val ? node : new_node(key, val, node.lev, node.lo, node.hi);
+    node = go_lo(node, key, lt) ? skew(node, put(node.lo, key, val, lt)) : skew(with_hi(node, put(node.hi, key, val, lt)));
+    return split(node);
   };
 
   var rm = function (node, key, lt) {
+    if (node) {
+      var lo = node.lo, hi = node.hi, hi_lo, lev = node.lev;
+      if (key === node.key) {
+        if (!lo || !hi)
+          return lo || hi;
+        for (hi_lo = hi; hi_lo.lo; hi_lo = hi_lo.lo) ; // find replacement
+        node = new_node(hi_lo.key, hi_lo.val, lev, lo, hi = rm(hi, hi_lo.key, lt));
+      } else {
+        node = go_lo(node, key, lt) ? with_lo(node, lo = rm(lo, key, lt)) : with_hi(node, hi = rm(hi, key, lt));
+      }
+      if (lo && lo.lev < lev - 1 || hi && hi.lev < lev - 1) {
+        node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev > lev ? with_lev(hi, lev - 1) : hi);
+        node = skew(node);
+        if (node.hi)
+          node = with_hi(node, skew(node.hi));
+        if (node.hi && node.hi.hi)
+          node = with_hi(node, with_hi(node.hi, skew(node.hi.hi)));
+        node = split(node);
+        if (node.hi)
+          node = with_hi(node, split(node.hi));
+      }
+    }
+    return node;
   };
 
-  var skew = function (node) {
-    if (!node || !node.lo || node.lev > node.lo.lev)
-      return node;
-    var lo = node.lo, new_hi = new_node(node.key, node.val, node.lev, lo.hi, node.hi);
-    return new_node(lo.key, lo.val, lo.lev, lo.lo, new_hi);
+  var skew = function (node, lo) {
+    lo = lo || node.lo;
+    return !lo || node.lev > lo.lev ? with_lo(node, lo) : with_hi(lo, with_lo(node, lo.hi));
   };
 
   var split = function (node) {
-    if (!node || !node.hi || !node.hi.hi || node.lev > node.hi.hi.lev)
-      return node;
-    var hi = node.hi, new_lo = new_node(node.key, node.val, node.lev, node.lo, hi.lo);
-    return new_node(hi.key, hi.val, hi.lev + 1, new_lo, hi.hi);
+    var hi = node.hi;
+    return !hi || !hi.hi || node.lev > hi.hi.lev ? node : new_node(hi.key, hi.val, hi.lev + 1, with_hi(node, hi.lo), hi.hi);
   };
 
   var keys = function (node, a) {
