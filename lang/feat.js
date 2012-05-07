@@ -13,7 +13,7 @@ var FEAT = (function (nil) {
     return freeze_object({ key: key, val: val, lo: lo, hi: hi, count: count, depth: depth });
   };
 
-  var map_with_lo_hi = function (node, lo, hi) { return map_node(node.key, node.val, lo, hi); };
+  var map_with_lo_hi = function (node, lo, hi) { return node.lo === lo && node.hi === hi ? node : map_node(node.key, node.val, lo, hi); };
   var map_with_lo = function (node, lo) { return map_with_lo_hi(node, lo, node.hi); };
   var map_with_hi = function (node, hi) { return map_with_lo_hi(node, node.lo, hi); };
   var map_go_lo = function (node, key, lt) { return lt && lt(key, node.key) || !lt && key < node.key; };
