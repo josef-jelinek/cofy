@@ -72,8 +72,8 @@
           },
           convert_to_string: function () {
             var map = FEAT.map({ c: 3, a: 1, b: 2 });
-            this.isSame(map.toString(), '{ a: 1, b: 2, c: 3 }');
-            this.isSame(FEAT.map().toString(), '{ }');
+            this.isSame(map.toString(), '{a: 1, b: 2, c: 3}');
+            this.isSame(FEAT.map().toString(), '{}');
           },
           getting_keys_sorted_default: function () {
             var map = FEAT.map({ c: 1, a: 2, b: 3 });

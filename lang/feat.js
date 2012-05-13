@@ -113,10 +113,10 @@ var FEAT = (function (nil) {
       return '';
     var s = print_map(node.lo), t = print_map(node.hi);
     if (s !== '')
-      s = s + ','
+      s = s + ', '
     if (t !== '')
-      t = ',' + t;
-    return s + ' ' + node.key + ': ' + node.val + t;
+      t = ', ' + t;
+    return s + node.key + ': ' + node.val + t;
   };
 
   var Map = function (node, lt) {
@@ -130,7 +130,7 @@ var FEAT = (function (nil) {
     this.keys = function (into) { return keys(node, into || []); };
     this.values = function (into) { return values(node, into || []); };
     this.toObject = function (into) { return to_object(node, into || {}); };
-    this.toString = function () { return '{' + print_map(node) + ' }'; };
+    this.toString = function () { return '{' + print_map(node) + '}'; };
     freeze_object(this);
   };
 
@@ -214,7 +214,7 @@ var FEAT = (function (nil) {
     this.push = function (val) { return Vec(push(node, val), count + 1); };
     this.pop = function () { return node.length > 0 ? Vec(pop(node), count - 1) : this; };
     this.toArray = function (into) { return to_array(node, into || []); };
-    this.toString = function () { return '{' + print_vec(node) + ' }'; };
+    this.toString = function () { return '[' + print_vec(node) + ']'; };
     freeze_object(this);
   };
 
