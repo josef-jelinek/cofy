@@ -7,6 +7,38 @@ var FEAT = (function (nil) {
     var is_own = function (o, key) { return Object.prototype.hasOwnProperty.call(o, key); };
     var freeze_object = Object.freeze || function (o) { return o; };
 
+
+    // Persistent sorted map based on a binary balanced trees (aka AA trees)
+
+    var Map = function (node, lt) {
+        this.count = function () { return node ? node.count : 0; };
+        this.contains = function (key) { return has(node, key, lt); };
+        this.get = function (key, fail) { return map_get(node, key, fail, lt); };
+        this.assoc = function (key, val) { return create_if_new(this, node, put(node, key, val, lt), lt); };
+        this.dissoc = function (key) { return create_if_new(this, node, rm(node, key, lt), lt); };
+        this.keys = function (into) { return keys(node, into || []); };
+        this.values = function (into) { return values(node, into || []); };
+        this.toObject = function (into) { return to_object(node, into || {}); };
+        this.toString = function () { return '{' + print_map(node) + '}'; };
+        freeze_object(this);
+    };
+
+    var is_map = function (x) { return x instanceof Map; };
+
+    var create_if_new = function (map, node, new_node, lt) {
+        return node === new_node ? map : new Map(new_node, lt);
+    };
+
+    var create_map = function (obj, lt) {
+        var key, map = new Map(nil, lt);
+        for (key in obj) {
+            if (is_own(obj, key)) {
+                map = map.assoc(key, obj[key]);
+            }
+        }
+        return map;
+    };
+
     var new_node = function (key, val, lev, lo, hi) {
         var count = 1 + (lo ? lo.count : 0) + (hi ? hi.count : 0);
         return freeze_object({ key: key, val: val, lev: lev, lo: lo, hi: hi, count: count });
@@ -131,37 +163,23 @@ var FEAT = (function (nil) {
         return s + node.key + ': ' + node.val + t;
     };
 
-    var Map = function (node, lt) {
-        this.count = function () { return node ? node.count : 0; };
-        this.contains = function (key) { return has(node, key, lt); };
-        this.get = function (key, fail) { return map_get(node, key, fail, lt); };
-        this.assoc = function (key, val) { return create_if_new(this, node, put(node, key, val, lt), lt); };
-        this.dissoc = function (key) { return create_if_new(this, node, rm(node, key, lt), lt); };
-        this.keys = function (into) { return keys(node, into || []); };
-        this.values = function (into) { return values(node, into || []); };
-        this.toObject = function (into) { return to_object(node, into || {}); };
-        this.toString = function () { return '{' + print_map(node) + '}'; };
+
+    // Naive copy-on-write persistent map on top of the native object
+
+    var Nap = function (obj) {
+        this.contains = function (key) { return is_own(obj, key); };
+        this.get = function (key, fail) { return is_own(obj, key) ? obj[key] : fail; };
+        this.assoc = function (key, val) { return new Nap(nap_assoc(obj, key, val)); };
+        this.dissoc = function (key) { return new Nap(nap_dissoc(obj, key)); };
+        this.toObject = function (into) { return nap_copy(obj); };
         freeze_object(this);
     };
 
-    var is_map = function (x) { return x instanceof Map; };
+    var is_nap = function (x) { return x instanceof Nap; };
 
-    var create_if_new = function (map, node, new_node, lt) {
-        return node === new_node ? map : new Map(new_node, lt);
+    var create_nap = function (obj) {
+        return new Nap(nap_copy(obj));
     };
-
-    var create_map = function (obj, lt) {
-        var key, map = new Map(nil, lt);
-        for (key in obj) {
-            if (is_own(obj, key)) {
-                map = map.assoc(key, obj[key]);
-            }
-        }
-        return map;
-    };
-
-
-    // Naive copy-on-write persistent map on top of the native object
 
     var nap_copy = function (obj) {
         var key, o = {};
@@ -187,25 +205,31 @@ var FEAT = (function (nil) {
         return freeze_object(o);
     };
 
-    var Nap = function (obj) {
-        this.contains = function (key) { return is_own(obj, key); };
-        this.get = function (key, fail) { return is_own(obj, key) ? obj[key] : fail; };
-        this.assoc = function (key, val) { return new Nap(nap_assoc(obj, key, val)); };
-        this.dissoc = function (key) { return new Nap(nap_dissoc(obj, key)); };
-        this.toObject = function (into) { return nap_copy(obj); };
-        freeze_object(this);
-    };
-
-    var is_nap = function (x) { return x instanceof Nap; };
-
-    var create_nap = function (obj) {
-        return new Nap(nap_copy(obj));
-    };
-
 
     // Persistent vector based on a shallow native-array tree
 
-    var vec_node_log_size = 2,
+    var Vec = function (node, count) {
+        var depth = vec_depth(count);
+        this.count = function () { return count; };
+        this.get = function (i) { return vec_get(node, i, count, depth); };
+        this.push = function (val) { return new Vec(push(node, val, count, depth), count + 1); };
+        this.pop = function () { return count > 0 ? new Vec(pop(node, count, depth), count - 1) : this; };
+        this.toArray = function (into) { return to_array(node, into || []); };
+        this.toString = function () { return '[' + print_vec(node) + ']'; };
+        freeze_object(this);
+    };
+
+    var is_vec = function (x) { return x instanceof Vec; };
+
+    var create_vec = function (arr) {
+        var i, len = arr ? arr.length : 0, vec = new Vec([], 0);
+        for (i = 0; i < len; i += 1) {
+            vec = vec.push(arr[i]);
+        }
+        return vec;
+    };
+
+    var vec_node_log_size = 5,
         vec_node_size = 1 << vec_node_log_size;
 
     var vec_depth = function (count) {
@@ -263,27 +287,6 @@ var FEAT = (function (nil) {
         }
         n.pop();
         return node;
-    };
-
-    var Vec = function (node, count) {
-        var depth = vec_depth(count);
-        this.count = function () { return count; };
-        this.get = function (i) { return vec_get(node, i, count, depth); };
-        this.push = function (val) { return new Vec(push(node, val, count, depth), count + 1); };
-        this.pop = function () { return count > 0 ? new Vec(pop(node, count, depth), count - 1) : this; };
-        this.toArray = function (into) { return to_array(node, into || []); };
-        this.toString = function () { return '[' + print_vec(node) + ']'; };
-        freeze_object(this);
-    };
-
-    var is_vec = function (x) { return x instanceof Vec; };
-
-    var create_vec = function (arr) {
-        var i, len = arr ? arr.length : 0, vec = new Vec([], 0);
-        for (i = 0; i < len; i += 1) {
-            vec = vec.push(arr[i]);
-        }
-        return vec;
     };
 
     return freeze_object({
