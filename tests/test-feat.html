@@ -205,6 +205,22 @@ var TESTS = (function (nil) {
         this.isSame(vector.get(32), 32);
       },
 
+      setting_values: function () {
+        var i, vector = FEAT.vector();
+        for (i = 0; i < 33; i++)
+          vector = vector.push(i);
+        for (i = 0; i < 33; i++)
+          vector = vector.set(i, i + 10);
+        this.isSame(vector.get(0), 10);
+        this.isSame(vector.get(1), 11);
+        this.isSame(vector.get(7), 17);
+        this.isSame(vector.get(8), 18);
+        this.isSame(vector.get(15), 25);
+        this.isSame(vector.get(16), 26);
+        this.isSame(vector.get(31), 41);
+        this.isSame(vector.get(32), 42);
+      },
+
       removing_values: function () {
         var i, vector = FEAT.vector();
         for (i = 0; i < 33; i++)
@@ -240,7 +256,7 @@ var TESTS = (function (nil) {
 <script>
 var RUNNER = (function () {
   'use strict';
-  var time, time_native, time_naive, time_persistent;
+  var time, time_vector, time_naive, time_persistent;
 
   time = function (f) {
     var time = new Date().getTime();
@@ -248,31 +264,31 @@ var RUNNER = (function () {
     return new Date().getTime() - time;
   };
 
-  time_native = function () {
-    var i, t = 0, n = 15000, o = {}, wr, rd, rm;
+  time_vector = function () {
+    var i, t = 0, n = 2000, vec = FEAT.vector(), wr, rd, rm;
 
     wr = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
-        o['a' + i * 113 % n] = i;
+        vec = vec.push(i);
       for (i = 0; i < n; i++)
-        o['a' + i * 113 % n] = i + 1;
+        vec = vec.set(i, i + 1);
     }));
 
     rd = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
-        t += o['a' + i];
+        t += vec.get(i);
     }));
 
     rm = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
-        delete o['a' + i];
+        vec = vec.pop();
     }));
 
-    return 'Native map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
+    return 'Persistent vector: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
   };
 
   time_naive = function () {
-    var i, t = 0, n = 500, map = FEAT.nap(), wr, rd, rm;
+    var i, t = 0, n = 2000, map = FEAT.nap(), wr, rd, rm;
 
     wr = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
@@ -295,7 +311,7 @@ var RUNNER = (function () {
   };
 
   time_persistent = function () {
-    var i, t = 0, n = 1500, map = FEAT.map(), wr, rd, rm;
+    var i, t = 0, n = 2000, map = FEAT.map(), wr, rd, rm;
 
     wr = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
@@ -329,7 +345,7 @@ var RUNNER = (function () {
       var time1 = document.getElementById('time1'),
           time2 = document.getElementById('time2'),
           time3 = document.getElementById('time3');
-      time1.innerHTML = time_native();
+      time1.innerHTML = time_vector();
       time2.innerHTML = time_naive();
       time3.innerHTML = time_persistent();
     }

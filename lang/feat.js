@@ -212,6 +212,12 @@ var FEAT = (function (nil) {
         var depth = vec_depth(count);
         this.count = function () { return count; };
         this.get = function (i) { return vec_get(node, i, count, depth); };
+
+        this.set = function (i, val) {
+            return i === count ? new Vec(push(node, val, count, depth), count + 1)
+                               : new Vec(vec_set(node, i, val, count, depth), count);
+        };
+
         this.push = function (val) { return new Vec(push(node, val, count, depth), count + 1); };
         this.pop = function () { return count > 0 ? new Vec(pop(node, count, depth), count - 1) : this; };
         this.toArray = function (into) { return to_array(node, into || []); };
@@ -229,7 +235,7 @@ var FEAT = (function (nil) {
         return vec;
     };
 
-    var vec_node_log_size = 5,
+    var vec_node_log_size = 4,
         vec_node_size = 1 << vec_node_log_size;
 
     var vec_depth = function (count) {
@@ -248,8 +254,19 @@ var FEAT = (function (nil) {
         return node;
     };
 
+    var vec_set = function (node, i, val, count, depth) {
+        var pos, n = node = node.slice(0);
+        while (depth > 1) {
+            depth -= 1;
+            pos = i >> vec_node_log_size * depth & vec_node_size - 1;
+            n = n[pos] = n[pos].slice(0);
+        }
+        n[i & vec_node_size - 1] = val;
+        return node;
+    };
+
     var push = function (node, val, count, depth) {
-        var i, n, new_depth;
+        var i, pos, n, new_depth;
         if (count === 0) {
             return [val];
         }
@@ -263,15 +280,15 @@ var FEAT = (function (nil) {
         node = n = node.slice(0);
         while (depth > 1) {
             depth -= 1;
-            i = (count >> vec_node_log_size * depth) & vec_node_size - 1;
-            n = n[i] = i < n.length ? n[i].slice(0) : [];
+            pos = (count >> vec_node_log_size * depth) & vec_node_size - 1;
+            n = n[pos] = pos < n.length ? n[pos].slice(0) : [];
         }
         n[count & vec_node_size - 1] = val;
         return node;
     };
 
     var pop = function (node, count, depth) {
-        var i, n, new_depth;
+        var pos, n, new_depth;
         if (count === 1) {
             return [];
         }
@@ -282,8 +299,8 @@ var FEAT = (function (nil) {
         node = n = node.slice(0);
         while (depth > 1) {
             depth -= 1;
-            i = (count - 1 >> vec_node_log_size * depth) & vec_node_size - 1;
-            n = n[i] = n[i].slice(0);
+            pos = (count - 1 >> vec_node_log_size * depth) & vec_node_size - 1;
+            n = n[pos] = n[pos].slice(0);
         }
         n.pop();
         return node;
