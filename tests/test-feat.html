@@ -80,7 +80,7 @@ var TESTS = (function (nil) {
 
       convert_to_string: function () {
         var map = FEAT.map({ c: 3, a: 1, b: 2 });
-        this.isSame(map.toString(), '{a: 1, b: 2, c: 3}');
+        this.isSame(map.toString(), '{ a: 1, b: 2, c: 3 }');
         this.isSame(FEAT.map().toString(), '{}');
       },
 
@@ -233,7 +233,21 @@ var TESTS = (function (nil) {
         this.isSame(vector.count(), 0);
         vector = vector.pop();
         this.isSame(vector.count(), 0);
-      }
+      },
+
+      convert_to_array: function () {
+        var i, a1 = [1, 2, 3], a2 = FEAT.vector(a1).toArray();
+        this.isNotSame(a1, a2);
+        this.isSame(a1.length, a2.length);
+        for (i = 0; i < a1.length; i++)
+          this.isSame(a1[i], a2[i]);
+      },
+
+      convert_to_string: function () {
+        var vec = FEAT.vector([1, 2, 3]);
+        this.isSame(vec.toString(), '[1, 2, 3]');
+        this.isSame(FEAT.vector().toString(), '[]');
+      },
     }
   };
 }());
