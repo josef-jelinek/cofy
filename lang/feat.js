@@ -293,7 +293,7 @@ var FEAT = (function (nil) {
         this.get = function (key, fail) { return is_own(obj, key) ? obj[key] : fail; };
         this.assoc = function (key, val) { return new Nap(nap_assoc(obj, key, val)); };
         this.dissoc = function (key) { return new Nap(nap_dissoc(obj, key)); };
-        this.toObject = function (into) { return nap_copy(obj); };
+        this.toObject = function (into) { return nap_copy(obj, into); };
         freeze_object(this);
     };
 
@@ -303,8 +303,8 @@ var FEAT = (function (nil) {
         return new Nap(nap_copy(obj));
     };
 
-    var nap_copy = function (obj) {
-        var key, o = {};
+    var nap_copy = function (obj, into) {
+        var key, o = into || {};
         if (obj) {
             for (key in obj) {
                 if (is_own(obj, key)) {

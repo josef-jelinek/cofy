@@ -140,6 +140,18 @@ var TESTS = (function (nil) {
           this.isUndefined(map2.get(a[i]));
       },
 
+      copying_to_object: function () {
+        var i, a = ['y', 'a', 'c', 'z', 'b', 'x'],
+            map = FEAT.nap(a),
+            b = map.toObject(),
+            c = map.toObject({ o: 1 });
+        for (i = 0; i < a.length; i++)
+          this.isSame(map.get(a[i]), b[a[i]]);
+        for (i = 0; i < a.length; i++)
+          this.isSame(map.get(a[i]), c[a[i]]);
+        this.isSame(c.o, 1);
+      },
+
       adding_items_directly: function () {
         var i, a = ['y', 'a', 'c', 'z', 'b', 'x'],
             map1 = {},
