@@ -17,15 +17,15 @@
 var TESTS = (function (nil) {
   'use strict';
   return {
-    map: {
+    sorted_map: {
 
       create_empty: function () {
-        this.isSame(FEAT.map().count(), 0);
-        this.isSame(FEAT.map({}).count(), 0);
+        this.isSame(FEAT.sortedMap().count(), 0);
+        this.isSame(FEAT.sortedMap({}).count(), 0);
       },
 
       create_from_object: function () {
-        var map = FEAT.map({a: 1, b: 2});
+        var map = FEAT.sortedMap({a: 1, b: 2});
         this.isSame(map.get('a'), 1);
         this.isSame(map.get('b'), 2);
         this.isUndefined(map.get('c'));
@@ -37,7 +37,7 @@ var TESTS = (function (nil) {
 
       adding_items: function () {
         var i, a = ['y', 'a', 'c', 'z', 'b', 'x'],
-            map1 = FEAT.map(),
+            map1 = FEAT.sortedMap(),
             map2 = map1;
         for (i = 0; i < a.length; i++)
           map2 = map2.assoc(a[i], i + 1);
@@ -49,7 +49,7 @@ var TESTS = (function (nil) {
 
       removing_items: function () {
         var i, a = ['c', 'z', 'y', 'a', 'x', 'b'],
-            map1 = FEAT.map(),
+            map1 = FEAT.sortedMap(),
             map2;
         for (i = 0; i < a.length; i++)
           map1 = map1.assoc(a[i], i + 1);
@@ -70,7 +70,7 @@ var TESTS = (function (nil) {
       },
 
       convert_to_object: function () {
-        var key, o1 = { a: 1, b: 2, c: 3 }, o2 = FEAT.map(o1).toObject();
+        var key, o1 = { a: 1, b: 2, c: 3 }, o2 = FEAT.sortedMap(o1).toObject();
         this.isNotSame(o1, o2);
         for (key in o1)
           this.isSame(o1[key], o2[key]);
@@ -79,36 +79,37 @@ var TESTS = (function (nil) {
       },
 
       convert_to_string: function () {
-        var map = FEAT.map({ c: 3, a: 1, b: 2 });
+        var map = FEAT.sortedMap({ c: 3, a: 1, b: 2 });
         this.isSame(map.toString(), '{ a: 1, b: 2, c: 3 }');
-        this.isSame(FEAT.map().toString(), '{}');
+        this.isSame(FEAT.sortedMap().toString(), '{}');
       },
 
       getting_keys_sorted_default: function () {
-        var map = FEAT.map({ c: 1, a: 2, b: 3 });
+        var map = FEAT.sortedMap({ c: 1, a: 2, b: 3 });
         this.isSame(map.keys().toString(), 'a,b,c');
       },
 
       getting_keys_sorted_with_comparator: function () {
-        var map = FEAT.map({ c: 1, a: 2, b: 3 }, function (a, b) { return a > b; });
+        var map = FEAT.sortedMap({ c: 1, a: 2, b: 3 }, function (a, b) { return a > b; });
         this.isSame(map.keys().toString(), 'c,b,a');
       },
 
       getting_values_default: function () {
-        var map = FEAT.map({ c: 1, a: 2, b: 3 });
+        var map = FEAT.sortedMap({ c: 1, a: 2, b: 3 });
         this.isSame(map.values().toString(), '2,3,1');
       },
 
       getting_values_with_comparator: function () {
-        var map = FEAT.map({ c: 1, a: 2, b: 3 }, function (a, b) { return a > b; });
+        var map = FEAT.sortedMap({ c: 1, a: 2, b: 3 }, function (a, b) { return a > b; });
         this.isSame(map.values().toString(), '1,3,2');
       }
     },
-    naive_native_map: {
+
+    cow_map: {
 
       adding_items: function () {
         var i, a = ['y', 'a', 'c', 'z', 'b', 'x'],
-            map1 = FEAT.nap(),
+            map1 = FEAT.cowMap(),
             map2 = map1;
         for (i = 0; i < a.length; i++)
           map2 = map2.assoc(a[i], i + 1);
@@ -121,7 +122,7 @@ var TESTS = (function (nil) {
 
       removing_items: function () {
         var i, a = ['c', 'z', 'y', 'a', 'x', 'b'],
-            map1 = FEAT.nap(),
+            map1 = FEAT.cowMap(),
             map2;
         for (i = 0; i < a.length; i++)
           map1 = map1.assoc(a[i], i + 1);
@@ -142,7 +143,7 @@ var TESTS = (function (nil) {
 
       copying_to_object: function () {
         var i, a = ['y', 'a', 'c', 'z', 'b', 'x'],
-            map = FEAT.nap(a),
+            map = FEAT.cowMap(a),
             b = map.toObject(),
             c = map.toObject({ o: 1 });
         for (i = 0; i < a.length; i++)
@@ -150,6 +151,12 @@ var TESTS = (function (nil) {
         for (i = 0; i < a.length; i++)
           this.isSame(map.get(a[i]), c[a[i]]);
         this.isSame(c.o, 1);
+      },
+
+      convert_to_string: function () {
+        var map = FEAT.cowMap({ c: 3, a: 1, b: 2 });
+        this.isTrue(/\{ [abc]: [123], [abc]: [123], [abc]: [123] \}/.test(map.toString()));
+        this.isSame(FEAT.cowMap().toString(), '{}');
       },
 
       adding_items_directly: function () {
@@ -186,6 +193,7 @@ var TESTS = (function (nil) {
           this.isUndefined(map2[a[i]]);
       }
     },
+
     vector: {
 
       create_empty: function () {
@@ -268,21 +276,24 @@ var TESTS = (function (nil) {
 
 <body onload="RUNNER.test()">
 <h1>Feat.js - JavaScript Persistent Data Structures</h1>
-<div class="download"><a href="../lang/feat.js">Download feat.js</a></div>
-<div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/lang/feat.js">feat.js on github</a></div>
+<div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/lang/feat-vector.js">feat-vector.js on github</a></div>
+<div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/lang/feat-sorted-map.js">feat-sorted-map.js on github</a></div>
+<div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/lang/feat-cow-map.js">feat-cow-map.js on github</a></div>
 <div class="download"><a href="https://github.com/josef-jelinek/cofy/blob/master/tests/test-feat.html">feat.js tests on github (this file)</a></div>
 <div id="result" style="background: #6CF">Running tests...</div>
 <div id="log"></div>
 <div id="time1"></div>
 <div id="time2"></div>
 <div id="time3"></div>
-<div><button onclick="RUNNER.measure();">Measure performance</button></div>
+<div><button onclick="RUNNER.measure();">Measure performance</button> (may block browser for some time)</div>
 <script src="../tools/test.js"></script>
-<script src="../lang/feat.js"></script>
+<script src="../lang/feat-vector.js"></script>
+<script src="../lang/feat-sorted-map.js"></script>
+<script src="../lang/feat-cow-map.js"></script>
 <script>
 var RUNNER = (function () {
   'use strict';
-  var time, time_vector, time_naive, time_persistent;
+  var time, time_vector, time_sorted_map, time_cow_map;
 
   time = function (f) {
     var time = new Date().getTime();
@@ -313,8 +324,8 @@ var RUNNER = (function () {
     return 'Persistent vector: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
   };
 
-  time_naive = function () {
-    var i, t = 0, n = 2000, map = FEAT.nap(), wr, rd, rm;
+  time_sorted_map = function () {
+    var i, t = 0, n = 2000, map = FEAT.sortedMap(), wr, rd, rm;
 
     wr = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
@@ -333,11 +344,11 @@ var RUNNER = (function () {
         map = map.dissoc('a' + i);
     }));
 
-    return 'Naive persistent map: ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
+    return 'Persistent sorted map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
   };
 
-  time_persistent = function () {
-    var i, t = 0, n = 2000, map = FEAT.map(), wr, rd, rm;
+  time_cow_map = function () {
+    var i, t = 0, n = 2000, map = FEAT.cowMap(), wr, rd, rm;
 
     wr = Math.round(n * 1000 / time(function () {
       for (i = 0; i < n; i++)
@@ -356,7 +367,7 @@ var RUNNER = (function () {
         map = map.dissoc('a' + i);
     }));
 
-    return 'Persistent map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
+    return 'Copy-on-write map: ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
   };
 
   return {
@@ -372,8 +383,8 @@ var RUNNER = (function () {
           time2 = document.getElementById('time2'),
           time3 = document.getElementById('time3');
       time1.innerHTML = time_vector();
-      time2.innerHTML = time_naive();
-      time3.innerHTML = time_persistent();
+      time2.innerHTML = time_sorted_map();
+      time3.innerHTML = time_cow_map();
     }
   };
 }());
