@@ -230,9 +230,9 @@
               this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 3)) '(11 12 13))"));
               this.isTrue(COFY.read_eval("(= (map (fn (a) (+ a 10)) '(1 2 : 3)) '(11 12 : 13))"));
               this.isSame(COFY.read_eval("(map (fn (a) (+ a 10)) 1)"), 11);
-              this.isTrue(COFY.read_eval("(lazy-seq? (map (fn (a) (+ a 10)) '(1 2 3)))"));
+              this.isTrue(COFY.read_eval("(lazy? (map (fn (a) (+ a 10)) '(1 2 3)))"));
               this.isFalse(COFY.read_eval("(realized? (map (fn (a) (+ a 10)) '(1 2 3)))"));
-              this.isTrue(COFY.read_eval("(lazy-seq? (map (fn (a) (+ a 10)) (iterate inc 1)))"));
+              this.isTrue(COFY.read_eval("(lazy? (map (fn (a) (+ a 10)) (iterate inc 1)))"));
               this.isFalse(COFY.read_eval("(realized? (map (fn (a) (+ a 10)) (iterate inc 1)))"));
               this.isTrue(COFY.read_eval("(= (take 4 (map (fn (a) (+ a 10)) (iterate inc 1))) '(11 12 13 14))"));
             },
@@ -268,68 +268,68 @@
               this.isTrue(COFY.read_eval("(= (take 6 (zip (iterate inc 1) '(10 11))) '(1 10 2 11 3 4))"));
               this.isTrue(COFY.read_eval("(= (take 6 (zip (iterate inc 1) '(10 : 11))) '(1 10 2 11 3 4))"));
             },
-            lazy_seq: function () {
+            lazy: function () {
               var val = 0;
               var cofy = COFY.create({ 'do-stuff': function () { return val += 1; }});
-              cofy.read_eval('(def (cons-fn) (cons (do-stuff) (lazy-seq cons-fn)))');
-              cofy.read_eval('(def stream (lazy-seq cons-fn))');
+              cofy.read_eval('(def (cons-fn) (cons (do-stuff) (lazy cons-fn)))');
+              cofy.read_eval('(def stream (lazy cons-fn))');
               this.isSame(val, 0);
-              this.isSame(cofy.read_eval('(first stream)'), 1);
-              this.isSame(cofy.read_eval('(first stream)'), 1);
+              this.isSame(cofy.read_eval('(head stream)'), 1);
+              this.isSame(cofy.read_eval('(head stream)'), 1);
               this.isSame(val, 1);
-              this.isTrue(cofy.read_eval('(lazy-seq? (rest stream))'));
-              this.isSame(cofy.read_eval('(first stream)'), 1);
+              this.isTrue(cofy.read_eval('(lazy? (tail stream))'));
+              this.isSame(cofy.read_eval('(head stream)'), 1);
               this.isSame(val, 1);
-              this.isSame(cofy.read_eval('(first (rest stream))'), 2);
+              this.isSame(cofy.read_eval('(head (tail stream))'), 2);
               this.isSame(val, 2);
-              this.isSame(cofy.read_eval('(first stream)'), 1);
+              this.isSame(cofy.read_eval('(head stream)'), 1);
               this.isTrue(cofy.read_eval('(realized? stream)'));
-              this.isTrue(cofy.read_eval('(realized? (rest stream))'));
-              this.isFalse(cofy.read_eval('(realized? (rest (rest stream)))'));
-              this.isFalse(cofy.read_eval('(empty? (rest (rest stream)))'));
-              this.isTrue(cofy.read_eval('(realized? (rest (rest stream)))'));
-              this.isTrue(cofy.read_eval('(empty? (lazy-seq (fn () ())))'));
-              this.isFalse(cofy.read_eval('(empty? (lazy-seq (fn () 0)))'));
-              this.isFalse(cofy.read_eval("(empty? (lazy-seq (fn () '(0))))"));
-              this.isTrue(cofy.read_eval("(empty? (rest (lazy-seq (fn () '(0)))))"));
+              this.isTrue(cofy.read_eval('(realized? (tail stream))'));
+              this.isFalse(cofy.read_eval('(realized? (tail (tail stream)))'));
+              this.isFalse(cofy.read_eval('(empty? (tail (tail stream)))'));
+              this.isTrue(cofy.read_eval('(realized? (tail (tail stream)))'));
+              this.isTrue(cofy.read_eval('(empty? (lazy (fn () ())))'));
+              this.isFalse(cofy.read_eval('(empty? (lazy (fn () 0)))'));
+              this.isFalse(cofy.read_eval("(empty? (lazy (fn () '(0))))"));
+              this.isTrue(cofy.read_eval("(empty? (tail (lazy (fn () '(0)))))"));
             },
             repeat: function () {
-              this.isTrue(COFY.read_eval('(lazy-seq? (repeat 1))'));
+              this.isTrue(COFY.read_eval('(lazy? (repeat 1))'));
               this.isFalse(COFY.read_eval('(realized? (repeat 1))'));
-              this.isSame(COFY.read_eval('(first (repeat 1))'), 1);
-              this.isSame(COFY.read_eval('(first (rest (repeat 1)))'), 1);
-              this.isSame(COFY.read_eval('(first (repeat 1 2))'), 1);
-              this.isFalse(COFY.read_eval('(lazy-seq? (rest (repeat 1 2)))'));
-              this.isSame(COFY.read_eval('(first (rest (repeat 1 2)))'), 2);
-              this.isTrue(COFY.read_eval('(lazy-seq? (rest (rest (repeat 1 2))))'));
-              this.isSame(COFY.read_eval('(first (rest (rest (repeat 1 2))))'), 1);
+              this.isSame(COFY.read_eval('(head (repeat 1))'), 1);
+              this.isSame(COFY.read_eval('(head (tail (repeat 1)))'), 1);
+              this.isSame(COFY.read_eval('(head (repeat 1 2))'), 1);
+              this.isFalse(COFY.read_eval('(lazy? (tail (repeat 1 2)))'));
+              this.isSame(COFY.read_eval('(head (tail (repeat 1 2)))'), 2);
+              this.isTrue(COFY.read_eval('(lazy? (tail (tail (repeat 1 2))))'));
+              this.isSame(COFY.read_eval('(head (tail (tail (repeat 1 2))))'), 1);
             },
             iterate: function () {
               this.isTrue(COFY.read_eval('(seq? (iterate inc 1))'));
-              this.isTrue(COFY.read_eval('(lazy-seq? (rest (iterate inc 1)))'));
-              this.isFalse(COFY.read_eval('(realized? (rest (iterate inc 1)))'));
-              this.isSame(COFY.read_eval('(first (iterate inc 1))'), 1);
-              this.isSame(COFY.read_eval('(first (rest (iterate inc 1)))'), 2);
-              this.isSame(COFY.read_eval('(first (rest (rest (iterate inc 1))))'), 3);
+              this.isTrue(COFY.read_eval('(lazy? (tail (iterate inc 1)))'));
+              this.isFalse(COFY.read_eval('(realized? (tail (iterate inc 1)))'));
+              this.isSame(COFY.read_eval('(head (iterate inc 1))'), 1);
+              this.isSame(COFY.read_eval('(head (tail (iterate inc 1)))'), 2);
+              this.isSame(COFY.read_eval('(head (tail (tail (iterate inc 1))))'), 3);
             },
             take: function () {
-              this.isTrue(COFY.read_eval('(lazy-seq? (take 3 (iterate inc 1)))'));
+              this.isTrue(COFY.read_eval('(lazy? (take 3 (iterate inc 1)))'));
               this.isFalse(COFY.read_eval('(realized? (take 3 (iterate inc 1)))'));
-              this.isSame(COFY.read_eval('(first (rest (rest (take 3 (iterate inc 1)))))'), 3);
-              this.isTrue(COFY.read_eval('(empty? (rest (rest (rest (take 3 (iterate inc 1))))))'));
-              this.isTrue(COFY.read_eval("(lazy-seq? (take 3 '(1 2 3 4 5)))"));
+              this.isSame(COFY.read_eval('(head (tail (tail (take 3 (iterate inc 1)))))'), 3);
+              this.isTrue(COFY.read_eval('(empty? (tail (tail (tail (take 3 (iterate inc 1))))))'));
+              this.isTrue(COFY.read_eval("(lazy? (take 3 '(1 2 3 4 5)))"));
               this.isTrue(COFY.read_eval("(= (take 3 '(1 2 3 4 5)) '(1 2 3))"));
             },
             skip: function () {
-              this.isTrue(COFY.read_eval('(lazy-seq? (skip 3 (iterate inc 1)))'));
+              this.isTrue(COFY.read_eval('(lazy? (skip 3 (iterate inc 1)))'));
               this.isFalse(COFY.read_eval('(realized? (skip 3 (iterate inc 1)))'));
-              this.isSame(COFY.read_eval('(first (skip 3 (iterate inc 1)))'), 4);
-              this.isSame(COFY.read_eval('(first (rest (skip 3 (iterate inc 1))))'), 5);
-              this.isTrue(COFY.read_eval('(lazy-seq? (rest (skip 3 (iterate inc 1))))'));
-              this.isFalse(COFY.read_eval('(realized? (rest (skip 3 (iterate inc 1))))'));
+              this.isSame(COFY.read_eval('(head (skip 3 (iterate inc 1)))'), 4);
+              this.isSame(COFY.read_eval('(head (tail (skip 3 (iterate inc 1))))'), 5);
+              this.isTrue(COFY.read_eval('(lazy? (tail (skip 3 (iterate inc 1))))'));
+              this.isFalse(COFY.read_eval('(realized? (tail (skip 3 (iterate inc 1))))'));
               this.isTrue(COFY.read_eval('(empty? (skip (/ 1 0) (iterate inc 1)))'));
               this.isTrue(COFY.read_eval('(empty? (skip nil (iterate inc 1)))'));
-              this.isTrue(COFY.read_eval("(lazy-seq? (skip 3 '(1 2 3 4 5)))"));
+              this.isTrue(COFY.read_eval("(lazy? (skip 3 '(1 2 3 4 5)))"));
               this.isTrue(COFY.read_eval("(= (skip 3 '(1 2 3 4 5)) '(4 5))"));
             }
           },

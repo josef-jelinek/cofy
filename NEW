@@ -1,3 +1,11 @@
+2012-11-26
+
+    feat.js separated to more modules
+    persistent vector implemented
+    significant speed up of feat.js (more than an order of magnitude)
+    cofy core cleaned up
+    source converted to JSLint-happy form (almost)
+
 2012-05-03
 
     feat.js added - pure JavaScript persistent map implemented
@@ -5,21 +13,21 @@
 
 2012-05-01
 
-    Lazy sequences. All list functions now accept/return lazy sequences (lazy-seq).
+    Lazy sequences. All list functions now accept/return lazy sequences (lazy).
     pair? - test for cons or lazy cons
-    lazy-seq - takes a function and evaluates it only if the content is accessed
-    lazy-seq? - test for seq created by lazy-seq
-    seq? - test for empty/non-empty, seq/lazy-seq
-    empty? - test for empty seq/lazy-seq
-    realized? - whether this node of lazy-seq was already accessed and its value cached
-    first, rest - work with lazy-seq the same as with cons cells
+    lazy - takes a function and evaluates it only if the content is accessed
+    lazy? - test for seq created by lazy
+    seq? - test for empty/non-empty, seq/lazy seq
+    empty? - test for empty seq/lazy seq
+    realized? - whether this node of lazy seq was already accessed and its value cached
+    head, tail - work with lazy seq the same as with cons cells
     apply - realizes the seq and passes values to a function
-    = - works for lazy-seqs and compares to cons cells by content
-    filter - a seq to a filtered lazy-seq
-    map - a seq(s) to a transformed lazy-seq
+    = - works for lazy seqs and compares to cons cells by content
+    filter - a seq to a filtered lazy seq
+    map - a seq(s) to a transformed lazy seq
     reduce - a seq to a value
-    zip - seqs to an iterleaved lazy-seq
-    repeat - an infinite lazy-seq repeating the given arguments
-    iterate - an infinite lazy-seq of X, f(X), f(f(X)), f(f(f(X))), ...
-    take - a lazy-seq containing the first N items of the given seq
-    skip - a lazy-seq containing all but the first N items of the given seq
+    zip - seqs to an iterleaved lazy seq
+    repeat - an infinite lazy seq repeating the given arguments
+    iterate - an infinite lazy seq of X, f(X), f(f(X)), f(f(f(X))), ...
+    take - a lazy seq containing the first N items of the given seq
+    skip - a lazy seq containing all but the first N items of the given seq

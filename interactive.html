@@ -60,8 +60,8 @@
   <div class="editor"><textarea id="input1" rows=8>;; map function example
 (def (my-map f x)
      (if (= x ()) ()
-                  (cons (f (first x))
-                        (my-map f (rest x)))))
+                  (cons (f (head x))
+                        (my-map f (tail x)))))
 
 (my-map inc '(1 2 3))</textarea></div>
   <a class="eval" href="#" onclick="return read_eval_print('input1', 'output1')">Evaluate</a>

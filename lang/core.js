@@ -3,10 +3,9 @@
 var COFY = (function (nil) {
     'use strict';
     var tools, syntax_error, runtime_error, derive_from,
-        seal_object, freeze_object, define_frozen_property,
         symbols = {}, multipart, get_symbol_parts,
-        Symbol, Cons, LazySeq, Var, Syntax,
-        is_string, is_symbol, is_cons, is_lazy_seq, is_var, is_syntax, is_function,
+        Symbol, Cons, Lazy, Var, Syntax,
+        is_string, is_symbol, is_cons, is_lazy, is_var, is_syntax, is_function,
         is_null, is_nil, is_nan, is_falsy, is_pair, is_empty, is_seq,
         head, tail, value,
         parse, printers, create_global_env, compile;
@@ -15,10 +14,6 @@ var COFY = (function (nil) {
 
         is_own: function (o, key) {
             return Object.prototype.hasOwnProperty.call(o, key);
-        },
-
-        apply: function (fn, args) {
-            return fn.apply(null, args);
         },
 
         slice: function (a, start) {
@@ -40,27 +35,6 @@ var COFY = (function (nil) {
         return new F();
     };
 
-    seal_object = Object.seal || function (o) {};
-    freeze_object = Object.freeze || function (o) {};
-
-    if (Object.defineProperty) {
-        define_frozen_property =  function (obj, key, value) {
-            Object.defineProperty(obj, key, {
-                value: value,
-                writable: false,
-                enumerable: true,
-                configurable: false
-            });
-        };
-    } else {
-        define_frozen_property = function (obj, key, value) {
-            if (tools.is_own(obj, key)) {
-                runtime_error('Redefining "' + key + '"');
-            }
-            obj[key] = value;
-        };
-    }
-
     multipart = new RegExp('^[^/]+(/[^/]+)+$');
 
     get_symbol_parts = function (name) {
@@ -68,7 +42,6 @@ var COFY = (function (nil) {
         for (i = 0; i < names.length; i += 1) {
             parts[i] = /^[0-9]+$/.test(names[i]) ? +names[i] : names[i];
         }
-        freeze_object(parts);
         return parts;
     };
 
@@ -77,7 +50,6 @@ var COFY = (function (nil) {
         if (multipart.test(name)) {
             this.parts = get_symbol_parts(name);
         }
-        freeze_object(this);
         symbols[name] = this;
     };
 
@@ -86,10 +58,9 @@ var COFY = (function (nil) {
     Cons = function (head, tail) {
         this.head = head;
         this.tail = tail;
-        freeze_object(this);
     };
 
-    LazySeq = function (fn) {
+    Lazy = function (fn) {
         var value, computed = false, compute;
 
         compute = function () {
@@ -104,23 +75,20 @@ var COFY = (function (nil) {
         this.head = function () { return compute().head; };
         this.tail = function () { return compute().tail; };
         this.realized = function () { return computed; };
-        freeze_object(this);
     };
 
     Var = function (value) {
         this.value = value;
-        seal_object(this); // value stays mutable
     };
 
     Syntax = function (compile) {
         this.compile = compile;
-        freeze_object(this);
     };
 
     is_string = function (x) { return typeof x === 'string'; };
     is_symbol = function (x) { return x instanceof Symbol; };
     is_cons = function (x) { return x instanceof Cons; };
-    is_lazy_seq = function (x) { return x instanceof LazySeq; };
+    is_lazy = function (x) { return x instanceof Lazy; };
     is_var = function (x) { return x instanceof Var; };
     is_syntax = function (x) { return x instanceof Syntax; };
     // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
@@ -137,12 +105,12 @@ var COFY = (function (nil) {
     is_nil = function (x) { return x === nil; };
     is_nan = function (x) { return x !== nil && isNaN(x); };
     is_falsy = function (x) { return x === false || x === null || x === nil; };
-    is_pair = function (x) { return is_cons(x) || (is_lazy_seq(x) && is_cons(x.value())); };
-    is_empty = function (x) { return is_null(x) || (is_lazy_seq(x) && is_null(x.value())); };
+    is_pair = function (x) { return is_cons(x) || (is_lazy(x) && is_cons(x.value())); };
+    is_empty = function (x) { return is_null(x) || (is_lazy(x) && is_null(x.value())); };
     is_seq = function (x) { return is_pair(x) || is_empty(x); };
     head = function (x) { return is_cons(x) ? x.head : is_pair(x) ? x.head() : nil; };
     tail = function (x) { return is_cons(x) ? x.tail : is_pair(x) ? x.tail() : nil; };
-    value = function (x) { return is_lazy_seq(x) ? x.value() : x; };
+    value = function (x) { return is_lazy(x) ? x.value() : x; };
 
     // recursive descent parser
     parse = (function () {
@@ -404,20 +372,20 @@ var COFY = (function (nil) {
 
         take_seq = function (n, seq) {
             n = +n;
-            return seq === null ? null : new LazySeq(function f() {
+            return seq === null ? null : new Lazy(function f() {
                 if (n <= 0 || !is_pair(seq)) {
                     return n <= 0 || is_empty(seq) ? null : value(seq);
                 }
                 var x = head(seq);
                 seq = tail(seq);
                 n -= 1;
-                return new Cons(x, new LazySeq(f));
+                return new Cons(x, new Lazy(f));
             });
         };
 
         skip_seq = function (n, seq) {
             n = +n;
-            return seq === null || is_nan(n) || n - 1 === n ? null : new LazySeq(function () {
+            return seq === null || is_nan(n) || n - 1 === n ? null : new Lazy(function () {
                 var i;
                 for (i = 0; i < n && is_pair(seq); i += 1) {
                     seq = tail(seq);
@@ -427,7 +395,7 @@ var COFY = (function (nil) {
         };
 
         filter_seq = function (fn, seq) {
-            return seq === null ? null : new LazySeq(function f() {
+            return seq === null ? null : new Lazy(function f() {
                 while (is_pair(seq) && is_falsy(fn(head(seq)))) {
                     seq = tail(seq);
                 }
@@ -436,30 +404,30 @@ var COFY = (function (nil) {
                 }
                 var x = head(seq);
                 seq = tail(seq);
-                return new Cons(x, new LazySeq(f));
+                return new Cons(x, new Lazy(f));
             });
         };
 
         map_seq = function (fn, seq) {
-            return seq === null ? null : new LazySeq(function f() {
+            return seq === null ? null : new Lazy(function f() {
                 if (!is_pair(seq)) {
                     return is_empty(seq) ? null : fn(seq);
                 }
                 var x = fn(head(seq));
                 seq = tail(seq);
-                return new Cons(x, new LazySeq(f));
+                return new Cons(x, new Lazy(f));
             });
         };
 
         map_seqs = function (fn) {
             var seqs = tools.slice(arguments, 1);
-            return new LazySeq(function f() {
+            return new Lazy(function f() {
                 if (!all(is_pair, seqs)) {
-                    return any(is_empty, seqs) ? null : tools.apply(fn, seqs);
+                    return any(is_empty, seqs) ? null : fn.apply(null, seqs);
                 }
-                var x = tools.apply(fn, get_heads(seqs));
+                var x = fn.apply(null, get_heads(seqs));
                 set_tails(seqs);
-                return new Cons(x, new LazySeq(f));
+                return new Cons(x, new Lazy(f));
             });
         };
 
@@ -492,13 +460,13 @@ var COFY = (function (nil) {
 
         zip_seqs = function () {
             var seqs = arguments;
-            return new LazySeq(function f() {
+            return new Lazy(function f() {
                 if (all(is_empty, seqs)) {
                     return null;
                 }
                 var values = pick_heads(seqs);
                 set_tails(seqs);
-                return array_to_list(values, new LazySeq(f));
+                return array_to_list(values, new Lazy(f));
             });
         };
 
@@ -515,11 +483,11 @@ var COFY = (function (nil) {
 
         repeat_seq = function () {
             var values = arguments;
-            return new LazySeq(function f() { return array_to_list(values, new LazySeq(f)); });
+            return new Lazy(function f() { return array_to_list(values, new Lazy(f)); });
         };
 
         iterate_seq = function (fn, x) {
-            return (function f(x) { return new Cons(x, new LazySeq(function () { return f(fn(x)); })); }(x));
+            return (function f(x) { return new Cons(x, new Lazy(function () { return f(fn(x)); })); }(x));
         };
 
         set_value = function (o, s, value) {
@@ -534,7 +502,10 @@ var COFY = (function (nil) {
             var key;
             for (key in bindings) {
                 if (Object.prototype.hasOwnProperty.call(bindings, key)) {
-                    define_frozen_property(env, key, bindings[key]);
+                    if (Object.prototype.hasOwnProperty.call(env, key)) {
+                        runtime_error('Redefining "' + key + '"');
+                    }
+                    env[key] = bindings[key];
                 }
             }
         };
@@ -550,12 +521,11 @@ var COFY = (function (nil) {
             }
             builtins.pow = function (a, b) { return Math.pow(a, b); };
             builtins.atan2 = function (a, b) { return Math.atan(a, b); };
-            builtins.min = function () { return tools.apply(Math.min, arguments); };
-            builtins.max = function () { return tools.apply(Math.max, arguments); };
+            builtins.min = function () { return Math.min.apply(null, arguments); };
+            builtins.max = function () { return Math.max.apply(null, arguments); };
             builtins.random = function () { return Math.random(); };
             builtins.pi = Math.PI;
             builtins.e = Math.E;
-            freeze_object(builtins);
             return builtins;
         };
 
@@ -578,13 +548,13 @@ var COFY = (function (nil) {
             'cons': function (x, y) { return new Cons(x, y); },
             'cons?': is_cons,
             'pair?': is_pair,
-            'lazy-seq': function (x) { return new LazySeq(x); },
-            'lazy-seq?': is_lazy_seq,
+            'lazy': function (x) { return new Lazy(x); },
+            'lazy?': is_lazy,
             'seq?': is_seq,
             'empty?': is_empty,
-            'realized?': function (x) { return is_lazy_seq(x) && x.realized(); },
-            'first': head,
-            'rest': tail,
+            'realized?': function (x) { return is_lazy(x) && x.realized(); },
+            'head': head,
+            'tail': tail,
             'list': function () { return array_to_list(arguments); },
             'var': function (x) { return new Var(x); },
             'var?': is_var,
@@ -593,9 +563,9 @@ var COFY = (function (nil) {
             'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
             '.apply': function (o, s, args) { return o[is_symbol(s) ? s.name : s].apply(o, list_to_array(args)); },
             '.call': function (o, s) { return o[is_symbol(s) ? s.name : s].apply(o, tools.slice(arguments, 2)); },
-            '+': function () { return tools.apply(sum, arguments); },
+            '+': function () { return sum.apply(null, arguments); },
             '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
-            '*': function () { return tools.apply(product, arguments); },
+            '*': function () { return product.apply(null, arguments); },
             '/': function (a, b) { return a / b; },
             'inc': function (x) { return +x + 1; },
             'dec': function (x) { return +x - 1; },
@@ -612,7 +582,7 @@ var COFY = (function (nil) {
             'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
             'unschedule': function (id) { return clearTimeout(id); },
             'filter': filter_seq,
-            'map': function (fn, list) { return arguments.length <= 2 ? map_seq(fn, list) : tools.apply(map_seqs, arguments); },
+            'map': function (fn, list) { return arguments.length <= 2 ? map_seq(fn, list) : map_seqs.apply(null, arguments); },
             'reduce': reduce_seq,
             'zip': zip_seqs,
             'repeat': repeat_seq,
@@ -721,13 +691,21 @@ var COFY = (function (nil) {
         };
 
         bind_args = function (names, values, parent_env) {
-            var i = 0, rest, env = derive_from(parent_env);
+            var i = 0, name, rest, env = derive_from(parent_env);
             for (rest = names; is_pair(rest); rest = tail(rest)) {
-                define_frozen_property(env, head(rest).name, i < values.length ? values[i] : nil);
+                name = head(rest).name;
+                if (Object.prototype.hasOwnProperty.call(env, name)) {
+                    runtime_error('Redefining "' + name + '"');
+                }
+                env[name] = i < values.length ? values[i] : nil;
                 i += 1;
             }
             if (rest !== null) {
-                define_frozen_property(env, rest.name, array_tail_to_list(values, i));
+                name = rest.name;
+                if (Object.prototype.hasOwnProperty.call(env, name)) {
+                    runtime_error('Redefining "' + name + '"');
+                }
+                env[name] = array_tail_to_list(values, i);
             }
             return env;
         };
@@ -778,7 +756,10 @@ var COFY = (function (nil) {
         };
 
         define_binding = function (name, expr, env) {
-            define_frozen_property(env, name, evaluate(expr, env));
+            if (Object.prototype.hasOwnProperty.call(env, name)) {
+                runtime_error('Redefining "' + name + '"');
+            }
+            env[name] = evaluate(expr, env);
         };
 
         compile_use = function (s_expr) {
@@ -798,7 +779,10 @@ var COFY = (function (nil) {
             var key;
             for (key in module) {
                 if (Object.prototype.hasOwnProperty.call(module, key)) {
-                    define_frozen_property(env, key, module[key]);
+                    if (Object.prototype.hasOwnProperty.call(env, key)) {
+                        runtime_error('Redefining "' + key + '"');
+                    }
+                    env[key] = module[key];
                 }
             }
         };
