@@ -405,7 +405,8 @@ var TESTS = (function () {
                     cofy.read_eval('(set! (document/getElementById "test-text") \'innerHTML "aaa")');
                     this.isSame(cofy.read_eval('(. (document/getElementById "test-text") \'innerHTML)'), 'aaa');
                     cofy.read_eval('(set! (document/getElementById "test-text") \'innerHTML "Test text")');
-                    this.isSame(cofy.read_eval('(. (apply document/getElementById \'("test-text")) \'innerHTML)'), 'Test text');
+                    this.isSame(cofy.read_eval('(. (.call document document/getElementById "test-text") \'innerHTML)'), 'Test text');
+                    this.isSame(cofy.read_eval('(. (.apply document document/getElementById \'("test-text")) \'innerHTML)'), 'Test text');
                 }
             },
 

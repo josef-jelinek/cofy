@@ -1,5 +1,5 @@
 /*global window */
-/*jslint regexp:true,evil:true */
+/*jslint regexp: true, evil: true */
 
 /**
  *
@@ -8,27 +8,9 @@
  */
 var COFY = (function (nil) {
     'use strict';
-    var tools, is, syntax_error, runtime_error,
-        symbols = {}, get_symbol_parts, Symbol, Cons, Lazy, Var, Syntax,
-        head, tail, value, parse, printers, create_global_env, compile;
-
-    tools = {
-        is_in: new Function('o', 'key', 'return key in o;'),
-
-        is_own: function (o, key) {
-            return Object.prototype.hasOwnProperty.call(o, key);
-        },
-
-        slice: function (a, start) {
-            return Array.prototype.slice.call(a, start);
-        }
-    };
-
-    tools.derive = Object.create || function (o) {
-        function F() {}
-        F.prototype = o || Object.prototype;
-        return new F();
-    };
+    var is, errors, head, tail, value, symbols = {},
+        Symbol, Cons, Lazy, Var, Syntax,
+        parse, printers, create_global_env, compile;
 
     is = {
         string: function (x) { return typeof x === 'string'; },
@@ -39,43 +21,51 @@ var COFY = (function (nil) {
         Var: function (x) { return x instanceof Var; },
         Syntax: function (x) { return x instanceof Syntax; },
         NaN: new Function('x', 'return x !== x;'),
+        truthy: function (x) { return x !== false && x !== null && x !== nil; },
         falsy: function (x) { return x === false || x === null || x === nil; },
-        pair: function (x) { return is.Cons(x) || (is.Lazy(x) && is.Cons(x.value())); },
-        empty: function (x) { return x === null || (is.Lazy(x) && x.value() === null); },
+        pair: function (x) { return is.Cons(x) || is.Cons(value(x)); },
+        empty: function (x) { return x === null || value(x) === null; },
         stream: function (x) { return is.pair(x) || is.empty(x); }
     };
 
-    // IE8- does not recognize DOM functions (and alert, ...) as 'function' but as 'object'
-    if (typeof window.alert !== 'function') {
+    errors = {
+        syntax: function (message) { throw { name: 'SyntaxError', message: message || 'An error' }; },
+        runtime: function (message) { throw { name: 'RuntimeError', message: message || 'An error' }; },
+        not_defined: function (name) { errors.runtime('Symbol ' + printers.show(name) + ' not defined'); },
+        redefining: function (name) { errors.runtime('Redefining ' + printers.show(name)); }
+    };
 
-        is.fn = function (x) {
-            return typeof x === 'function' || (x !== null && typeof x === 'object' && tools.is_own(x, 'call'));
+    head = function (x) {
+        return is.Cons(x) ? x.head : is.pair(x) ? x.head() : nil;
+    };
+
+    tail = function (x) {
+        return is.Cons(x) ? x.tail : is.pair(x) ? x.tail() : nil;
+    };
+
+    value = function (x) {
+        return is.Lazy(x) ? x.value() : x;
+    };
+
+    Symbol = (function () {
+
+        var get_parts = function (names) {
+            var i, len = names.length, name, parts = [];
+            for (i = 0; i < len; i += 1) {
+                name = names[i];
+                parts[i] = /^[0-9]+$/.test(name) ? +name : name;
+            }
+            return parts;
         };
-    }
 
-    syntax_error = function (message) {
-        throw { name: 'SyntaxError', message: message || 'An error' };
-    };
-
-    runtime_error = function (message) {
-        throw { name: 'RuntimeError', message: message || 'An error' };
-    };
-
-    Symbol = function (name) {
-        this.name = name;
-        if (/^[^\/]+(\/[^\/]+)+$/.test(name)) {
-            this.parts = get_symbol_parts(name);
-        }
-        symbols[name] = this;
-    };
-
-    get_symbol_parts = function (name) {
-        var i, names = name.split('/'), parts = [];
-        for (i = 0; i < names.length; i += 1) {
-            parts[i] = /^[0-9]+$/.test(names[i]) ? +names[i] : names[i];
-        }
-        return parts;
-    };
+        return function (name) {
+            this.name = name;
+            if (/^[^\/]+(\/[^\/]+)+$/.test(name)) {
+                this.parts = get_parts(name.split('/'));
+            }
+            symbols[name] = this;
+        };
+    }());
 
     symbols.quote = new Symbol('quote');
 
@@ -85,20 +75,20 @@ var COFY = (function (nil) {
     };
 
     Lazy = function (fn) {
-        var value, computed = false, compute;
+        var value, realized = false, realize;
 
-        compute = function () {
-            if (!computed) {
+        realize = function () {
+            if (!realized) {
                 value = fn();
-                computed = true;
+                realized = true;
             }
             return value;
         };
 
-        this.value = function () { return compute(); };
-        this.head = function () { return compute().head; };
-        this.tail = function () { return compute().tail; };
-        this.realized = function () { return computed; };
+        this.value = function () { return realize(); };
+        this.head = function () { return realize().head; };
+        this.tail = function () { return realize().tail; };
+        this.realized = function () { return realized; };
     };
 
     Var = function (value) {
@@ -109,10 +99,6 @@ var COFY = (function (nil) {
         this.compile = compile;
     };
 
-    head = function (x) { return is.Cons(x) ? x.head : is.pair(x) ? x.head() : nil; };
-    tail = function (x) { return is.Cons(x) ? x.tail : is.pair(x) ? x.tail() : nil; };
-    value = function (x) { return is.Lazy(x) ? x.value() : x; };
-
     // recursive descent parser
     parse = (function () {
         var tokens, index, unescape_chars = { '\\n': '\n', '\\r': '\r', '\\t': '\t' },
@@ -121,7 +107,7 @@ var COFY = (function (nil) {
 
         read_expr = function () {
             var token = read_token();
-            if (tools.is_own(token_actions, token)) {
+            if (token_actions[token]) {
                 return token_actions[token]();
             }
             if (token.charAt(0) === '"') {
@@ -153,14 +139,14 @@ var COFY = (function (nil) {
 
         match = function (token) {
             if (read_token() !== token) {
-                syntax_error('Expected "' + token + '"');
+                errors.syntax('Expected "' + token + '"');
             }
             return true;
         };
 
         read_token = function () {
             if (index >= tokens.length) {
-                syntax_error('Expected more');
+                errors.syntax('Expected more');
             }
             index += 1;
             return tokens[index - 1];
@@ -177,9 +163,13 @@ var COFY = (function (nil) {
             return s;
         };
 
+        tokenize = function (s) {
+            return remove_comments(s.match(/'|\(|\)|;[^\r\n]*|[^\s'()";]+|"([^\\]|\\.)*?"|"/g));
+        };
+
         remove_comments = function (tokens) {
-            var i, filtered = [], count = tokens.length;
-            for (i = 0; i < count; i += 1) {
+            var i, len = tokens.length, filtered = [];
+            for (i = 0; i < len; i += 1) {
                 if (tokens[i].charAt(0) !== ';') {
                     filtered.push(tokens[i]);
                 }
@@ -187,13 +177,9 @@ var COFY = (function (nil) {
             return filtered;
         };
 
-        tokenize = function (s) {
-            return remove_comments(s.match(/'|\(|\)|;[^\r\n]*|[^\s'()";]+|"([^\\]|\\.)*?"|"/g));
-        };
-
         token_actions = {
-            '"': function () { syntax_error('Unclosed string'); },
-            ')': function () { syntax_error('Unexpected ")"'); },
+            '"': function () { errors.syntax('Unclosed string'); },
+            ')': function () { errors.syntax('Unexpected ")"'); },
             "'": function () {
                 return new Cons(symbols.quote, new Cons(read_expr(), null));
             },
@@ -210,7 +196,7 @@ var COFY = (function (nil) {
             index = 0;
             expr = read_stream();
             if (index < tokens.length) {
-                syntax_error('Trailing characters');
+                errors.syntax('Trailing characters');
             }
             return expr;
         };
@@ -281,12 +267,11 @@ var COFY = (function (nil) {
     }());
 
     create_global_env = (function () {
-        var list_to_array, any, all, swap, equal, stream_equal, sum, product,
+        var list_to_array, any, all, swap, equal, sum, product,
             check_array_pairs, array_to_list,
-            lower_than, greater_than, lower_than_or_equal, greater_than_or_equal,
             take_stream, skip_stream, filter_stream, map_stream, map_streams, get_heads, set_tails,
             reduce_stream, zip_streams, pick_heads, repeat_stream, iterate_stream,
-            set_value, add_bindings, complete_builtins, wrap_function, builtins;
+            set_value, add_bindings, complete_builtins, builtins;
 
         list_to_array = function (list) {
             var values = [], rest;
@@ -323,11 +308,14 @@ var COFY = (function (nil) {
         };
 
         equal = function (a, b) {
-            return value(a) === value(b) || (is.stream(a) && is.stream(b) && stream_equal(a, b));
-        };
-
-        stream_equal = function (a, b) {
-            return (is.empty(a) && is.empty(b)) || (is.pair(a) && is.pair(b) && equal(head(a), head(b)) && equal(tail(a), tail(b)));
+            while (value(a) !== value(b) && (!is.empty(a) || !is.empty(b))) {
+                if (!is.pair(a) || !is.pair(b) || !equal(head(a), head(b))) {
+                    return false;
+                }
+                a = tail(a);
+                b = tail(b);
+            }
+            return true;
         };
 
         sum = function () {
@@ -366,11 +354,6 @@ var COFY = (function (nil) {
             }
             return rest;
         };
-
-        lower_than = function (a, b) { return a < b; };
-        greater_than = function (a, b) { return a > b; };
-        lower_than_or_equal = function (a, b) { return a <= b; };
-        greater_than_or_equal = function (a, b) { return a >= b; };
 
         take_stream = function (n, stream) {
             n = +n;
@@ -422,12 +405,12 @@ var COFY = (function (nil) {
         };
 
         map_streams = function (fn) {
-            var streams = tools.slice(arguments, 1);
+            var streams = Array.prototype.slice.call(arguments, 1);
             return new Lazy(function f() {
                 if (!all(is.pair, streams)) {
-                    return any(is.empty, streams) ? null : fn.apply({}, streams);
+                    return any(is.empty, streams) ? null : fn.apply(null, streams);
                 }
-                var x = fn.apply({}, get_heads(streams));
+                var x = fn.apply(null, get_heads(streams));
                 set_tails(streams);
                 return new Cons(x, new Lazy(f));
             });
@@ -505,7 +488,7 @@ var COFY = (function (nil) {
             for (key in bindings) {
                 if (Object.prototype.hasOwnProperty.call(bindings, key)) {
                     if (Object.prototype.hasOwnProperty.call(env, key)) {
-                        runtime_error('Redefining "' + key + '"');
+                        errors.redefining(key);
                     }
                     env[key] = bindings[key];
                 }
@@ -513,13 +496,14 @@ var COFY = (function (nil) {
         };
 
         complete_builtins = function (builtins) {
-            var i, primitive_form_names = ['quote', 'fn', 'if', 'def', 'do', 'use'],
+            var i, wrap_fn, primitive_form_names = ['quote', 'fn', 'if', 'def', 'do', 'use'],
                 math_names = ['abs', 'round', 'floor', 'ceil', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan'];
             for (i = 0; i < primitive_form_names.length; i += 1) {
                 builtins[primitive_form_names[i]] = nil;
             }
+            wrap_fn = function (fn) { return function (x) { return fn(x); }; };
             for (i = 0; i < math_names.length; i += 1) {
-                builtins[math_names[i]] = wrap_function(Math[math_names[i]]);
+                builtins[math_names[i]] = wrap_fn(Math[math_names[i]]);
             }
             builtins.pow = function (a, b) { return Math.pow(a, b); };
             builtins.atan2 = function (a, b) { return Math.atan2(a, b); };
@@ -529,10 +513,6 @@ var COFY = (function (nil) {
             builtins.pi = Math.PI;
             builtins.e = Math.E;
             return builtins;
-        };
-
-        wrap_function = function (fn) {
-            return function (x) { return fn(x); };
         };
 
         builtins = complete_builtins({
@@ -559,9 +539,9 @@ var COFY = (function (nil) {
             'var?': is.Var,
             'deref': function (x) { return x.value; },
             'swap!': swap,
-            'apply': function (f, args) { return f.apply({}, list_to_array(args)); },
-            '.apply': function (o, s, args) { return o[is.Symbol(s) ? s.name : s].apply(o, list_to_array(args)); },
-            '.call': function (o, s) { return o[is.Symbol(s) ? s.name : s].apply(o, tools.slice(arguments, 2)); },
+            'apply': function (f, args) { return f.apply(null, list_to_array(args)); },
+            '.apply': function (o, m, args) { return (is.fn(m) ? m : o[is.Symbol(m) ? m.name : m]).apply(o, list_to_array(args)); },
+            '.call': function (o, m) { return (is.fn(m) ? m : o[is.Symbol(m) ? m.name : m]).apply(o, Array.prototype.slice.call(arguments, 2)); },
             '+': function () { return sum.apply(null, arguments); },
             '-': function (a, b) { return arguments.length === 1 ? -a : a - b; },
             '*': function () { return product.apply(null, arguments); },
@@ -569,10 +549,10 @@ var COFY = (function (nil) {
             'inc': function (x) { return +x + 1; },
             'dec': function (x) { return +x - 1; },
             'remainder': function (a, b) { return a % b; },
-            '<': function () { return check_array_pairs(arguments, lower_than); },
-            '>': function () { return check_array_pairs(arguments, greater_than); },
-            '<=': function () { return check_array_pairs(arguments, lower_than_or_equal); },
-            '>=': function () { return check_array_pairs(arguments, greater_than_or_equal); },
+            '<': function () { return check_array_pairs(arguments, function (a, b) { return a < b; }); },
+            '>': function () { return check_array_pairs(arguments, function (a, b) { return a > b; }); },
+            '<=': function () { return check_array_pairs(arguments, function (a, b) { return a <= b; }); },
+            '>=': function () { return check_array_pairs(arguments, function (a, b) { return a >= b; }); },
             '=': function (a, b) { return equal(a, b); },
             'identical?': function (a, b) { return a === b; },
             '.': function (o, s) { return is.Symbol(s) ? o[s.name] : o[s]; },
@@ -581,7 +561,7 @@ var COFY = (function (nil) {
             'schedule': function (f, ms) { return setTimeout(f, ms || 0); },
             'unschedule': function (id) { return clearTimeout(id); },
             'filter': filter_stream,
-            'map': function (fn, list) { return arguments.length <= 2 ? map_stream(fn, list) : map_streams.apply({}, arguments); },
+            'map': function (fn, list) { return arguments.length <= 2 ? map_stream(fn, list) : map_streams.apply(null, arguments); },
             'reduce': reduce_stream,
             'zip': zip_streams,
             'repeat': repeat_stream,
@@ -591,7 +571,7 @@ var COFY = (function (nil) {
         });
 
         return function (external) {
-            var env = {};
+            var env = Object.create(null);
             add_bindings(env, builtins);
             if (external) {
                 add_bindings(env, external);
@@ -602,15 +582,11 @@ var COFY = (function (nil) {
 
     // compiler from a data structure to a function taking an environment
     compile = (function () {
-        var evaluate, compile, compile_symbol, compile_symbol_parts,
+        var compile, compile_symbol, compile_symbol_parts,
             has_syntax_defined, compile_syntax, compile_do,
             compile_call, compile_symbol_call, compile_symbol_parts_call, compile_non_symbol_call, compile_fn,
             bind_args, array_tail_to_list, compile_if, compile_def, get_def_pairs, compile_def_fn,
             define_binding, compile_use, import_all, syntax_bindings;
-
-        evaluate = function (expr, env) {
-            return is.fn(expr) ? expr(env) : expr;
-        };
 
         compile = function (s_expr) {
             var x = value(s_expr);
@@ -627,24 +603,33 @@ var COFY = (function (nil) {
             if (symbol.parts) {
                 return compile_symbol_parts(symbol.parts);
             }
-            var name = symbol.name;
-            return function (env) {
-                if (!tools.is_in(env, name)) {
-                    runtime_error('Symbol "' + printers.show(symbol) + '" not defined');
-                }
-                return env[name];
+            var name = printers.print(symbol.name), error, body;
+            error = function () {
+                errors.not_defined(symbol.name);
             };
+            body = [
+                'return function(env){',
+                ' var o=env[' + name + '];',
+                ' if(o===nil&&!(' + name + ' in env))err();',
+                ' return o;',
+                '};'
+            ];
+            return new Function('err', 'nil', body.join(''))(error, nil);
         };
 
         compile_symbol_parts = function (parts) {
-            var i, os = '', fs, fns;
-            for (i = 0; i < parts.length - 1; i += 1) {
-                os += '[' + printers.print(parts[i]) + ']';
+            var i, part_access = '', last_name, body;
+            for (i = 0; i < parts.length; i += 1) {
+                part_access += '[' + printers.print(parts[i]) + ']';
             }
-            fs = '[' + printers.print(parts[parts.length - 1]) + ']';
-            fns = 'function(){return f.apply(o, arguments)}';
-            return eval('(function(env){var o=env' + os + ',f=o' + fs +';return is.fn(f)?' + fns + ':f})');
+            body = [
+                'return function(env){',
+                ' return env' + part_access + ';',
+                '};'
+            ];
+            return new Function('is_fn', body.join(''))(is.fn);
         };
+
 
         has_syntax_defined = function (s_expr) {
             var x = value(s_expr);
@@ -663,7 +648,7 @@ var COFY = (function (nil) {
             return function (env) {
                 var i, len = a.length, res;
                 for (i = 0; i < len; i += 1) {
-                    res = evaluate(a[i], env);
+                    res = is.fn(a[i]) ? a[i](env) : a[i];
                 }
                 return res;
             };
@@ -684,37 +669,43 @@ var COFY = (function (nil) {
             if (symbol.parts) {
                 return compile_symbol_parts_call(symbol, args);
             }
-            var name = symbol.name;
+            var name = symbol.name,
+                is_in = new Function('o', 'key', 'return key in o;');
             return function (env) {
                 var i, len = args.length, fn = env[name], values = [];
-                if (!fn && !tools.is_in(env, fn)) {
-                    runtime_error('Function "' + printers.show(symbol) + '" not defined');
+                if (!fn && !is_in(env, name)) {
+                    errors.not_defined(name);
                 }
                 for (i = 0; i < len; i += 1) {
-                    values.push(evaluate(args[i], env));
+                    values.push(is.fn(args[i]) ? args[i](env) : args[i]);
                 }
-                return fn.apply({}, values); // {} isolating from global window access
+                return fn.apply(null, values);
             };
         };
 
         compile_symbol_parts_call = function (symbol, args) {
-            var i, parts = symbol.parts, js = '', as = [];
+            var i, parts = symbol.parts, obj_path = '', arg_calls = [], body;
             for (i = 0; i < parts.length; i += 1) {
-                js += '[' + printers.print(parts[i]) + ']';
+                obj_path += '[' + printers.print(parts[i]) + ']';
             }
             for (i = 0; i < args.length; i += 1) {
-                as.push('evaluate(args[' + i + '], env)');
+                arg_calls.push(is.fn(args[i]) ? 'args[' + i + '](env)' : 'args[' + i + ']');
             }
-            return eval('(function(env){return env' + js + '(' + as.join(',') + ')})');
+            body = [
+                'return function(env){',
+                ' return env' + obj_path + '(' + arg_calls.join(',') + ');',
+                '};'
+            ];
+            return new Function('args', body.join(''))(args);
         };
 
         compile_non_symbol_call = function (fn_expr, args) {
             return function (env) {
-                var i, len = args.length, fn = evaluate(fn_expr, env), values = [];
+                var i, len = args.length, fn = is.fn(fn_expr) ? fn_expr(env) : fn_expr, values = [];
                 for (i = 0; i < len; i += 1) {
-                    values.push(evaluate(args[i], env));
+                    values.push(is.fn(args[i]) ? args[i](env) : args[i]);
                 }
-                return fn.apply({}, values); // {} isolating from global window access
+                return fn.apply(null, values);
             };
         };
 
@@ -722,17 +713,17 @@ var COFY = (function (nil) {
             var names = head(s_expr), body = compile_do(tail(s_expr));
             return function (env) {
                 return function () {
-                    return evaluate(body, bind_args(names, arguments, env));
+                    return is.fn(body) ? body(bind_args(names, arguments, env)) : body;
                 };
             };
         };
 
         bind_args = function (names, values, parent_env) {
-            var i = 0, name, rest, env = tools.derive(parent_env);
+            var i = 0, name, rest, env = Object.create(parent_env);
             for (rest = names; is.pair(rest); rest = tail(rest)) {
                 name = head(rest).name;
                 if (Object.prototype.hasOwnProperty.call(env, name)) {
-                    runtime_error('Redefining "' + name + '"');
+                    errors.redefining(name);
                 }
                 env[name] = i < values.length ? values[i] : nil;
                 i += 1;
@@ -740,7 +731,7 @@ var COFY = (function (nil) {
             if (rest !== null) {
                 name = rest.name;
                 if (Object.prototype.hasOwnProperty.call(env, name)) {
-                    runtime_error('Redefining "' + name + '"');
+                    errors.redefining(name);
                 }
                 env[name] = array_tail_to_list(values, i);
             }
@@ -760,7 +751,8 @@ var COFY = (function (nil) {
                 t = compile(head(tail(s_expr))),
                 f = is.pair(tail(tail(s_expr))) ? compile(head(tail(tail(s_expr)))) : nil;
             return function (env) {
-                return evaluate(evaluate(cond, env) ? t : f, env);
+                var branch = is.truthy(is.fn(cond) ? cond(env) : cond) ? t : f;
+                return is.fn(branch) ? branch(env) : branch;
             };
         };
 
@@ -770,19 +762,19 @@ var COFY = (function (nil) {
             }
             var pairs = get_def_pairs(s_expr);
             return function (env) {
-                var rest;
-                for (rest = pairs; is.pair(rest); rest = tail(rest)) {
-                    define_binding(head(head(rest)), tail(head(rest)), env);
+                var i, len = pairs.length;
+                for (i = 0; i < len; i += 1) {
+                    define_binding(pairs[i][0], pairs[i][1], env);
                 }
             };
         };
 
         get_def_pairs = function (s_expr) {
-            if (!s_expr) {
-                return null;
+            var rest, a = [];
+            for (rest = s_expr; is.pair(rest); rest = tail(tail(rest))) {
+                a.push([head(rest).name, compile(head(tail(rest)))]);
             }
-            var pair = new Cons(head(s_expr).name, compile(head(tail(s_expr))));
-            return new Cons(pair, get_def_pairs(tail(tail(s_expr))));
+            return a;
         };
 
         compile_def_fn = function (s_expr) {
@@ -794,9 +786,9 @@ var COFY = (function (nil) {
 
         define_binding = function (name, expr, env) {
             if (Object.prototype.hasOwnProperty.call(env, name)) {
-                runtime_error('Redefining "' + name + '"');
+                errors.redefining(name);
             }
-            env[name] = evaluate(expr, env);
+            env[name] = is.fn(expr) ? expr(env) : expr;
         };
 
         compile_use = function (s_expr) {
@@ -807,20 +799,20 @@ var COFY = (function (nil) {
             return function (env) {
                 var i, len = a.length;
                 for (i = 0; i < len; i += 1) {
-                    import_all(evaluate(a[i], env), env);
+                    import_all(is.fn(a[i]) ? a[i](env) : a[i], env);
                 }
             };
         };
 
         import_all = function (module, env) {
             if (!module || typeof module !== 'object') {
-                runtime_error('Not a module');
+                errors.runtime('Not a module');
             }
             var key;
             for (key in module) {
                 if (Object.prototype.hasOwnProperty.call(module, key)) {
                     if (Object.prototype.hasOwnProperty.call(env, key)) {
-                        runtime_error('Redefining "' + key + '"');
+                        errors.redefining(key);
                     }
                     env[key] = module[key];
                 }
@@ -839,7 +831,7 @@ var COFY = (function (nil) {
         return function (s_expr) {
             var expr = compile_do(s_expr);
             return function (env) {
-                return evaluate(expr, env || create_global_env());
+                return is.fn(expr) ? expr(env || create_global_env()) : expr;
             };
         };
     }());
