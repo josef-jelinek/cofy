@@ -11,80 +11,80 @@ body { font: 14px Arial, sans-serif; background: #FFF; color: #000; padding: 20p
 #log b { color: #900; background: #FEE; }
 </style>
 <script>
-var nil, tests, run;
 
-tests = {
+var TESTS = (function (nil) {
+    return {
+        test_pass: function() {
+            this.isTrue(true);
+        },
 
-    test_pass: function() {
-        this.isTrue(true);
-    },
+        test_truthy: function () {
+            this.isTruthy(true);
+            this.isTruthy(1);
+            this.isTruthy(-1);
+            this.isTruthy(1/0);
+            this.isTruthy(-1/0);
+            this.isTruthy(' ');
+            this.isTruthy([]);
+            this.isTruthy({});
+        },
 
-    test_truthy: function () {
-        this.isTruthy(true);
-        this.isTruthy(1);
-        this.isTruthy(-1);
-        this.isTruthy(1/0);
-        this.isTruthy(-1/0);
-        this.isTruthy(' ');
-        this.isTruthy([]);
-        this.isTruthy({});
-    },
+        test_falsy: function () {
+            this.isFalsy(false);
+            this.isFalsy(null);
+            this.isFalsy(nil);
+            this.isFalsy(0);
+            this.isFalsy('');
+            this.isFalsy(0/0);
+        },
 
-    test_falsy: function () {
-        this.isFalsy(false);
-        this.isFalsy(null);
-        this.isFalsy(nil);
-        this.isFalsy(0);
-        this.isFalsy('');
-        this.isFalsy(0/0);
-    },
+        test_same: function () {
+            this.isSame(true, true);
+            this.isSame(false, false);
+            this.isSame(0, 0);
+            this.isSame('a', 'a');
+            this.isSame(null, null);
+            this.isSame(nil);
+            this.isSame(1/0, 1/0);
+            this.isSame(-1/0, -1/0);
+            this.isNotSame(1/0, -1/0);
+            this.isNotSame(0/0, 0/0);
+            this.isNotSame([], []);
+            this.isNotSame({}, {});
+        },
 
-    test_same: function () {
-        this.isSame(true, true);
-        this.isSame(false, false);
-        this.isSame(0, 0);
-        this.isSame('a', 'a');
-        this.isSame(null, null);
-        this.isSame(nil);
-        this.isSame(1/0, 1/0);
-        this.isSame(-1/0, -1/0);
-        this.isNotSame(1/0, -1/0);
-        this.isNotSame(0/0, 0/0);
-        this.isNotSame([], []);
-        this.isNotSame({}, {});
-    },
+        test_error: function () {
+            this.throwsError(function () { throw { name: "SomeError", message: "Some message"}; });
+        },
 
-    test_error: function () {
-        this.throwsError(function () { throw { name: "SomeError", message: "Some message"}; });
-    },
+        test_string_difference: function () {
+            this.isSame(TEST.stringDiff('', 'abc').join(' | '), ' | <s><b>abc</b></s>');
+            this.isSame(TEST.stringDiff('abc', '').join(' | '), '<s><b>abc</b></s> | ');
+            this.isSame(TEST.stringDiff('abc', 'ab').join(' | '), 'ab<s><b>c</b></s> | ab');
+            this.isSame(TEST.stringDiff('ab', 'abc').join(' | '), 'ab | ab<s><b>c</b></s>');
+            this.isSame(TEST.stringDiff('abc', 'bc').join(' | '), '<s><b>a</b></s>bc | bc');
+            this.isSame(TEST.stringDiff('bc', 'abc').join(' | '), 'bc | <s><b>a</b></s>bc');
+            this.isSame(TEST.stringDiff('abc', 'ac').join(' | '), 'a<s><b>b</b></s>c | ac');
+            this.isSame(TEST.stringDiff('ac', 'abc').join(' | '), 'ac | a<s><b>b</b></s>c');
+            this.isSame(TEST.stringDiff('abc', 'abC').join(' | '), 'ab<b>c</b> | ab<b>C</b>');
+            this.isSame(TEST.stringDiff('abc', 'Abc').join(' | '), '<b>a</b>bc | <b>A</b>bc');
+            this.isSame(TEST.stringDiff('abc', 'aBc').join(' | '), 'a<b>b</b>c | a<b>B</b>c');
+            this.isSame(TEST.stringDiff('abc', 'AbC').join(' | '), '<b>abc</b> | <b>AbC</b>');
+            this.isSame(TEST.stringDiff('', 'abcdefghijklmnopqrstuvwxyz').join(' | '),
+                        ' | <s><b>abcdefgh...stuvwxyz</b></s>');
+            this.isSame(TEST.stringDiff('abcdefghijklmnopqrstuvwxyz', 'abcdefghijklMNOpqrstuvwxyz').join(' | '),
+                        '...efghijkl<b>mno</b>pqrstuvw... | ...efghijkl<b>MNO</b>pqrstuvw...');
+        }
+    };
+}());
 
-    test_string_difference: function () {
-        this.isSame(TEST.stringDiff('', 'abc').join(' | '), ' | <s><b>abc</b></s>');
-        this.isSame(TEST.stringDiff('abc', '').join(' | '), '<s><b>abc</b></s> | ');
-        this.isSame(TEST.stringDiff('abc', 'ab').join(' | '), 'ab<s><b>c</b></s> | ab');
-        this.isSame(TEST.stringDiff('ab', 'abc').join(' | '), 'ab | ab<s><b>c</b></s>');
-        this.isSame(TEST.stringDiff('abc', 'bc').join(' | '), '<s><b>a</b></s>bc | bc');
-        this.isSame(TEST.stringDiff('bc', 'abc').join(' | '), 'bc | <s><b>a</b></s>bc');
-        this.isSame(TEST.stringDiff('abc', 'ac').join(' | '), 'a<s><b>b</b></s>c | ac');
-        this.isSame(TEST.stringDiff('ac', 'abc').join(' | '), 'ac | a<s><b>b</b></s>c');
-        this.isSame(TEST.stringDiff('abc', 'abC').join(' | '), 'ab<b>c</b> | ab<b>C</b>');
-        this.isSame(TEST.stringDiff('abc', 'Abc').join(' | '), '<b>a</b>bc | <b>A</b>bc');
-        this.isSame(TEST.stringDiff('abc', 'aBc').join(' | '), 'a<b>b</b>c | a<b>B</b>c');
-        this.isSame(TEST.stringDiff('abc', 'AbC').join(' | '), '<b>abc</b> | <b>AbC</b>');
-        this.isSame(TEST.stringDiff('', 'abcdefghijklmnopqrstuvwxyz').join(' | '),
-                    ' | <s><b>abcdefgh...stuvwxyz</b></s>');
-        this.isSame(TEST.stringDiff('abcdefghijklmnopqrstuvwxyz', 'abcdefghijklMNOpqrstuvwxyz').join(' | '),
-                    '...efghijkl<b>mno</b>pqrstuvw... | ...efghijkl<b>MNO</b>pqrstuvw...');
-    }
-};
-
-run = function () {
-    TEST.init(document.getElementById('result'), log = document.getElementById('log'))(tests);
+var RUN = function () {
+    TEST.init(document.getElementById('result'), document.getElementById('log'))(TESTS);
 };
 </script>
 </head>
 
-<body onload="run()">
+<body onload="RUN()">
 <div id="result"></div>
 <div id="log"></div>
 <script src="../tools/test.js"></script>

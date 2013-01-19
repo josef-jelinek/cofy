@@ -1,9 +1,10 @@
-/*globals document */
+/*global document, setTimeout */
+
 var TEST = (function (nil) {
     'use strict';
     var check_cond, assert_calls = 0, asserts,
-        comparison_info, string_comparison_info, get_string_diff, html_encode, get_type,
-        run, run_one, run_success_result, run_error_result;
+        comparison_info, get_type, get_string_diff, html_encode,
+        run, run_one;
 
     check_cond = function (cond, message) {
         assert_calls += 1;
@@ -61,7 +62,10 @@ var TEST = (function (nil) {
     };
 
     comparison_info = function (o1, o2) {
-        var t1 = get_type(o1), t2 = get_type(o2);
+        var t1, t2, diff;
+
+        t1 = get_type(o1);
+        t2 = get_type(o2);
         if (t1 !== t2) {
             return 'types <i>' + t1 + '</i> and <i>' + t2 + '</i> are not the same';
         }
@@ -69,14 +73,23 @@ var TEST = (function (nil) {
             return '<i>numbers</i> <b>' + o1 + '</b> and <b>' + o2 + '</b> are not the same';
         }
         if (t1 === 'string') {
-            return string_comparison_info(o1, o2);
+            diff = get_string_diff(o1, o2);
+            return '<i>strings</i> "' + diff[0] + '" and "' + diff[1] + '" differ';
         }
         return '<i>' + t1 + '</i> references are not the same';
     };
 
-    string_comparison_info = function (s1, s2) {
-        var diff = get_string_diff(s1, s2);
-        return '<i>strings</i> "' + diff[0] + '" and "' + diff[1] + '" differ';
+    get_type = function (o) {
+        if (o === null) {
+            return 'null';
+        }
+        if (o === nil) {
+            return 'undefined';
+        }
+        if (o instanceof Array) {
+            return 'array';
+        }
+        return typeof o;
     };
 
     get_string_diff = function (s1, s2) {
@@ -139,67 +152,72 @@ var TEST = (function (nil) {
         return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\s/g, '&nbsp;');
     };
 
-    get_type = function (o) {
-        if (o === null) {
-            return 'null';
-        }
-        if (o === nil) {
-            return 'undefined';
-        }
-        if (o instanceof Array) {
-            return 'array';
-        }
-        return typeof o;
-    };
-
-    run = function (tests, name, results_accumulated, on_error) {
-        var key, prefix = name && name + '.';
+    run = function (tests, name, results, on_step, on_error, callback) {
+        var keys, do_next, prefix = name && name + '.';
         if (typeof tests === 'function') {
-            return run_one(tests, name, results_accumulated, on_error);
+            run_one(tests, name, results, on_step, on_error, callback);
+            return;
         }
-        for (key in tests) {
-            if (Object.prototype.hasOwnProperty.call(tests, key)) {
-                results_accumulated = run(tests[key], prefix + key, results_accumulated, on_error);
+        keys = Object.keys(tests);
+        do_next = function (results) {
+            if (keys.length === 0) {
+                callback(results);
+                return;
             }
-        }
-        return results_accumulated;
+            var key = keys.shift();
+            run(tests[key], prefix + key, results, on_step, on_error, do_next);
+        };
+        do_next(results);
     };
 
-    run_one = function (test, name, results_accumulated, on_error) {
+    run_one = function (test, name, results, on_step, on_error, callback) {
         try {
-            return run_success_result(test, results_accumulated);
+            assert_calls = 0;
+            on_step(name, results);
+            test.call(asserts);
+            results = {
+                calls: results.calls + 1,
+                fails: results.fails,
+                asserts: results.asserts + assert_calls
+            };
         } catch (e) {
-            return run_error_result(name, e.message, results_accumulated, on_error, e.name === 'test-fail');
+            results = {
+                calls: results.calls + 1,
+                fails: results.fails + 1,
+                asserts: results.asserts + assert_calls
+            };
+            on_error(name, e.message, assert_calls, e.name === 'test-fail');
         }
-    };
-
-    run_success_result = function (test, results_accumulated) {
-        assert_calls = 0;
-        test.call(asserts);
-        return {
-            calls: results_accumulated.calls + 1,
-            fails: results_accumulated.fails,
-            color: results_accumulated.color
-        };
-    };
-
-    run_error_result = function (name, message, results_accumulated, on_error, is_test_fail) {
-        on_error(name, message, assert_calls, is_test_fail);
-        return {
-            calls: results_accumulated.calls + 1,
-            fails: results_accumulated.fails + 1,
-            color: '#FF6633'
-        };
+        setTimeout(function () { callback(results); }, 0);
     };
 
     return {
 
         init: function (resultElem, logElem) {
-            var on_error;
+            var set_html, on_step, on_error, on_done;
+
+            set_html = function (text, color) {
+                resultElem.style.backgroundColor = color;
+                if (text) {
+                    resultElem.innerHTML = '';
+                    resultElem.appendChild(document.createTextNode(text));
+                }
+            };
+
+            on_step = function (name, results) {
+                var s = 'Running "' + name + '", ';
+                if (results.fails > 0) {
+                    s += results.fails + ' of ' + results.calls + ' failed';
+                } else {
+                    s += results.calls + ' passed';
+                }
+                set_html(s, results.fails > 0 ? '#FFFF33' : '#66CCFF');
+            };
 
             on_error = function (name, message, assert_calls, is_test_fail) {
                 var div = document.createElement('div'),
                     label = name + ' assert ' + assert_calls;
+                set_html('', '#AA9944');
                 if (is_test_fail) {
                     div.innerHTML = label + ': ' + message;
                 } else {
@@ -208,17 +226,18 @@ var TEST = (function (nil) {
                 logElem.appendChild(div);
             };
 
-            return function (tests) {
-                var s, results_accumulated = { calls: 0, fails: 0, color: '#66FF33' };
-                results_accumulated = run(tests, '', results_accumulated, on_error);
-                resultElem.style.backgroundColor = results_accumulated.color;
-                resultElem.innerHTML = '';
-                if (results_accumulated.fails > 0) {
-                    s = results_accumulated.fails + ' of ' + results_accumulated.calls + ' failed';
+            on_done = function (results) {
+                var s;
+                if (results.fails > 0) {
+                    s = results.fails + ' of ' + results.calls + ' failed (' + results.asserts + ' asserts called)';
                 } else {
-                    s = results_accumulated.calls + ' passed';
+                    s = results.calls + ' passed (' + results.asserts + ' asserts called)';
                 }
-                resultElem.appendChild(document.createTextNode(s));
+                set_html(s, results.fails > 0 ? '#FF9933' : '#99FF33');
+            };
+
+            return function (tests) {
+                run(tests, '', { calls: 0, fails: 0, asserts: 0 }, on_step, on_error, on_done);
             };
         },
 
