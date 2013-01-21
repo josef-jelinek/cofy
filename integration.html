@@ -6,9 +6,12 @@
   <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body>
-  <div id="logo"><a href="/"><img src="img/cofy-logo-o.png" width=180 height=77></a></div>
+<div id="header">
+  <div id="logo"><a href="/"><img src="img/cofy-logo-brown-90x39.png" width="90" height="39"></a></div>
   <h1>Integration with JavaScript</h1>
+</div>
 
+<div id="body">
   <p>The first step is to include the 'core.js' script.</p>
   <p class="code">&lt;script src="lang/core.js"&gt;&lt;/script&gt;</p>
   <p><b>There are three stages of the code:</b></p>
@@ -73,6 +76,7 @@
 
   <p>The evaluation environment is capability-based. The evaluated code has access only
   to the external objects and functions passed by the invoking code. However passing e.g. one specific DOM element gives access to the entire DOM, as there are public parent links in the element. This can be solved by passing functions that manipulate the element instead.</p>
+</div>
 </body>
 </html>
 

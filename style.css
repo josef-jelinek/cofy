@@ -4,16 +4,17 @@
   src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
 }
 html, body, ul, li { margin: 0; padding: 0; border: 0; }
-html { background: #FFD url(img/bg.png); }
-body { font: italic 12pt/1.5 'Anonymous Pro', monospace; color: #420; padding: 50px; }
-h1 { font-size: 120%; font-weight: bold; margin: 20px 0; padding: 0; }
+html { background: #DDD; }
+body { font: normal 15px/1.4 Arial, sans-serif; color: #000; }
+#header { background: #EEE; padding: 30px 40px 10px; text-align: center; }
+#footer { background: #DDD; padding: 10px 40px; }
+#body { background: #FFF; padding: 10px 40px 20px; }
+h1 { font-size: 144%; font-weight: normal; margin: 10px 0 10px; padding: 0; }
 p { margin: 10px 0; }
-a { color: #361; text-decoration: none; }
-a:hover { color: #481; text-decoration: underline; }
+a { color: #380; text-decoration: none; }
+a:hover { color: #491; text-decoration: underline; }
 a img { border: 0; }
 ul { list-style: none; }
 li { padding-left: 30px; background: url(img/lambdot.png) 0 5px no-repeat; }
 li em { font-style: italic; }
-.code { font-size: 90%; font-style: normal; font-weight: bold; color: #776; }
-.footnote { margin-top: 40px; font-size: 88%; }
-
+.code { font: bold 90% 'Anonymous Pro', monospace; color: #555; }

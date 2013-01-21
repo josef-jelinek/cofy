@@ -1,15 +1,17 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cofy - A Lisp Interpreter in JavaScript</title>
-  <link rel="stylesheet" href="style.css" type="text/css">
+<meta charset="UTF-8">
+<title>Cofy - A Lisp Interpreter in JavaScript</title>
+<link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body>
-  <div id="logo"><a href="/"><img src="img/cofy-logo-o.png" width=180 height=77></a></div>
+<div id="header">
+  <div id="logo"><a href="/"><img src="img/cofy-logo-brown-90x39.png" width="90" height="39"></a></div>
   <h1>A Lisp language for a browser.</h1>
-  <p>The purpose of this project is to allow executing dynamically generated or loaded code
-  inside a web browser with capability based security.</p>
+</div>
+<div id="body">
+  <p>The purpose of this project is to allow executing dynamically generated or loaded code inside a web browser with capability based security.</p>
   <p>The language is a compact dialect of Lisp, which allows to generate programs that generate programs...</p>
   <p>The source code is processed by the browser and does not need to be precompiled anywhere else.
   In addition, minifying the source code is trivial.</p>
@@ -19,15 +21,15 @@
     <li><a href="language.html">Language reference</a></li>
     <li><a href="https://github.com/josef-jelinek/cofy">Repository at github</a> (<a href="https://github.com/josef-jelinek/cofy/zipball/master">download as zip</a>)</li>
   </ul>
+</div>
 
-  <div class="footnote">
+<div id="footer">
   <p>Developed using a <a href="https://github.com/josef-jelinek/cofy/blob/master/tools/test.js">custom unit test framework</a></p>
   <ul>
     <li><a href="tests/test-cofy.html">Run language unit tests</a></li>
     <li><a href="tests/test-feat.html">Run <i>feat.js</i> persistent data structures unit tests</a></li>
     <li><a href="tests/test-test.html">Run test framework unit tests</a></li>
   </ul>
-  </div>
+</div>
 </body>
 </html>
-

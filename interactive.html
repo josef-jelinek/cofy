@@ -1,60 +1,63 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cofy - A Lisp Interpreter in JavaScript - Examples</title>
-  <link rel="stylesheet" href="style.css" type="text/css">
-  <style>
-    .editor {
-      margin: 15px 0 0 0;
-      padding: 0 0 0 10px;
-      border: 1px solid #DDD;
-      background: #FFF;
-    }
-    .editor textarea {
-      display: block;
-      width: 100%;
-      resize: none;
-      margin: 0;
-      padding: 10px 0;
-      border: 0;
-      background: #FFF;
-      color: #000;
-      font: 16px 'Anonymous Pro', monospace;
-    }
-    .editor textarea:focus { outline: none; }
-    .output {
-      padding: 10px 20px;
-      border: 1px solid #DDD;
-      background: #FFF;
-      color: #555;
-      font: 16px 'Anonymous Pro', monospace;
-    }
-    .output small { color: #48F; }
-    .output em { color: #C00; }
-    .eval {
-      display: inline-block;
-      height: 22px;
-      margin: 15px;
-      padding: 0 20px;
-      text-align: center;
-      background: #FFC;
-      color: #420;
-      border: 1px outset #DD9;
-      border-radius: 7px;
-      font: normal 16px/22px 'Anonymous Pro', monospace;
-      text-decoration: none;
-    }
-    .eval:hover { background: #FFB; text-decoration: none; color: #210; }
-    .eval:active { background: #FFB; border-style: inset; }
-    .eval:focus { outline: none; }
-    canvas { display: block; margin: 10px auto; width: 200px; height: 200px; background: #FFF; border: 1px solid #DDD; }
-  </style>
+<meta charset="UTF-8">
+<title>Cofy - A Lisp Interpreter in JavaScript - Examples</title>
+<link rel="stylesheet" href="style.css" type="text/css">
+<style>
+.editor {
+  margin: 15px 0 0 0;
+  padding: 0 0 0 10px;
+  border: 1px solid #DDD;
+  background: #F8FFF4;
+}
+.editor textarea {
+  display: block;
+  width: 100%;
+  resize: none;
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  background: #F8FFF4;
+  color: #000;
+  font: 16px 'Anonymous Pro', monospace;
+}
+.editor textarea:focus { outline: none; }
+.output {
+  padding: 10px 20px;
+  border: 1px solid #DDD;
+  background: #F8F8F8;
+  color: #555;
+  font: 16px 'Anonymous Pro', monospace;
+}
+.output small { color: #48F; }
+.output em { color: #C00; }
+.eval {
+  display: inline-block;
+  height: 22px;
+  margin: 15px;
+  padding: 0 20px;
+  text-align: center;
+  background: #FFC;
+  color: #420;
+  border: 1px outset #DD9;
+  font: normal 16px/22px Arial, sans-serif;
+  text-decoration: none;
+}
+.eval:hover { background: #FFB; text-decoration: none; color: #210; }
+.eval:active { background: #FFB; border-style: inset; }
+.eval:focus { outline: none; }
+canvas { display: block; margin: 10px auto; width: 200px; height: 200px; background: #FFF; border: 1px solid #DDD; }
+</style>
 </head>
 <body>
-  <div id="logo"><a href="/"><img src="img/cofy-logo-o.png" width=180 height=77></a></div>
-  <h1>Code Examples</h1>
+<div id="header">
+  <div id="logo"><a href="/"><img src="img/cofy-logo-brown-90x39.png" width="90" height="39"></a></div>
+  <h1>Interactive Code Examples</h1>
+</div>
 
+<div id="body">
+  <p><b>Note: </b>All examples can be edited and evaluated multiple times.</p>
   <p>A recursive function 'my-map' takes a function and a list. It traverses the list and returns a new list.
   Each element in the new list is a result of applying the function to the corresponding element of the original list.</p>
   <div class="editor"><textarea id="input1" rows=8>;; map function example
@@ -69,11 +72,11 @@
 
   <p>The following script has been passed a 'document' object (named 'page') thus it can make changes to the entire web page.
   It also shows 'setTimeout' function named 'schedule' in Cofy.</p>
-  <div class="editor"><textarea id="input2" rows=8>(set! page/body/style 'background "#DDF")
+  <div class="editor"><textarea id="input2" rows=8>(set! page/body/style 'color "red")
 
-(def id (schedule (fn () (set! page/body/style 'background ())) 500))
+(def id (schedule (fn () (set! page/body/style 'color ())) 500))
 
-(cons id page/body/style/background)</textarea></div>
+(cons id page/body/style/color)</textarea></div>
   <a class="eval" href="#" onclick="return read_eval_print('input2', 'output2', { page: document })">Evaluate</a>
   <div id="output2" class="output"><b>Output Window</b><br></div>
 
@@ -89,56 +92,57 @@
 (stroke)</textarea></div>
   <a class="eval" href="#" onclick="return read_eval_print('input3', 'output3', canvas_functions('canvas3'))">Evaluate</a>
   <div id="output3" class="output"><b>Output Window</b><br></div>
-  <canvas id="canvas3" width=200 height=200></canvas>
+  <canvas id="canvas3" width="200" height="200"></canvas>
+</div>
 
-  <script src="lang/core.js"></script>
-  <script>
-    function html_encode(s) {
-      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+<script src="lang/core.js"></script>
+<script>
+function html_encode(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+
+var OUT = (function() {
+  var outs = {};
+
+  var get_out = function (id) {
+    if (!outs[id])
+      outs[id] = { element: document.getElementById(id), attempt: 1 };
+    return outs[id];
+  };
+
+  return {
+    display: function (id, s) {
+      var out = get_out(id);
+      out.element.innerHTML += '<small>' + out.attempt++ + '</small> ' + html_encode(s) + '<br>';
+    },
+    error: function (id, e) {
+      get_out(id).element.innerHTML += '<em>' + e.name + ": " + html_encode(e.message)  + '</em><br>';
     }
+  };
+}());
 
-    var OUT = (function() {
-      var outs = {};
+function read_eval_print(id_in, id_out, env) {
+  var s = document.getElementById(id_in).value;
+  try {
+    var cofy = COFY.create(env);
+    OUT.display(id_out, cofy.read_eval_print(s));
+  } catch (e) {
+    OUT.error(id_out, e);
+  }
+  return false;
+}
 
-      var get_out = function (id) {
-        if (!outs[id])
-          outs[id] = { element: document.getElementById(id), attempt: 1 };
-        return outs[id];
-      };
-
-      return {
-        display: function (id, s) {
-          var out = get_out(id);
-          out.element.innerHTML += '<small>' + out.attempt++ + '</small> ' + html_encode(s) + '<br>';
-        },
-        error: function (id, e) {
-          get_out(id).element.innerHTML += '<em>' + e.name + ": " + html_encode(e.message)  + '</em><br>';
-        }
-      };
-    }());
-
-    function read_eval_print(id_in, id_out, env) {
-      var s = document.getElementById(id_in).value;
-      try {
-        var cofy = COFY.create(env);
-        OUT.display(id_out, cofy.read_eval_print(s));
-      } catch (e) {
-        OUT.error(id_out, e);
-      }
-      return false;
-    }
-
-    function canvas_functions(id) {
-      var canvas = document.getElementById(id);
-      var context = canvas.getContext('2d');
-      return {
-        move: function (x, y) { context.beginPath(); context.moveTo(x, y); },
-        line: function (x, y) { context.lineTo(x, y); },
-        stroke: function () { context.stroke(); },
-        clear: function () { context.clearRect(0, 0, 200, 200); }
-      };
-    }
-  </script>
+function canvas_functions(id) {
+  var canvas = document.getElementById(id);
+  var context = canvas.getContext('2d');
+  return {
+    move: function (x, y) { context.beginPath(); context.moveTo(x, y); },
+    line: function (x, y) { context.lineTo(x, y); },
+    stroke: function () { context.stroke(); },
+    clear: function () { context.clearRect(0, 0, 200, 200); }
+  };
+}
+</script>
 </body>
 </html>
 

@@ -1,14 +1,16 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cofy - A Lisp Interpreter in JavaScript</title>
-  <link rel="stylesheet" href="style.css" type="text/css">
+<meta charset="UTF-8">
+<title>Cofy - A Lisp Interpreter in JavaScript</title>
+<link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body>
-  <div id="logo"><a href="/"><img src="img/cofy-logo-o.png" width=180 height=77></a></div>
+<div id="header">
+  <div id="logo"><a href="/"><img src="img/cofy-logo-brown-90x39.png" width="90" height="39"></a></div>
   <h1>Language reference</h1>
-
+</div>
+<div id="body">
   <p>The language is composed of comments, primitives, lists, functions, special syntax forms, and a few other special types.</p>
   <p><b>Comments:</b> Start with a semicolon and ends at the end of the same line.</p>
   <p><b>Data types:</b></p>
@@ -41,7 +43,6 @@
   <p><b>Default global bindings (immutable):</b></p>
   <ul>
     <li><span class="code">nil</span> - JavaScript undefined</li>
-    <li><span class="code">nil?</span> - one-parameter function testing the parameter for <em>nil</em></li>
     <li><span class="code">nan</span> - JavaScript NaN</li>
     <li><span class="code">true</span> - JavaScript true</li>
     <li><span class="code">false</span> - JavaScript false</li>
@@ -78,6 +79,7 @@
 
   <p>For interactive examples see <a href="interactive.html">Interactive exampes</a>.</p>
   <p>For examples of interaction between Cofy and JavaScript see <a href="integration.html">JavaScript integration</a>.</p>
+</div>
 </body>
 </html>
 
