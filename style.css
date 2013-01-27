@@ -4,17 +4,20 @@
   src: local('Anonymous Pro'), local('AnonymousPro'), url('fonts/anonymouspro.woff') format('woff');
 }
 html, body, ul, li { margin: 0; padding: 0; border: 0; }
-html { background: #DDD; }
+html { background: #EEE; }
 body { font: normal 15px/1.4 Arial, sans-serif; color: #000; }
-#header { background: #EEE; padding: 30px 40px 10px; text-align: center; }
-#footer { background: #DDD; padding: 10px 40px; }
+#header { background: #CCC url(img/hexa.png); padding: 25px 0 15px; text-align: center; }
+#logo a { line-height: 29px; font-size: 18px; font-weight: bold; color: #000; font-variant: small-caps; font-style: italic; }
+#logo img { vertical-align: top; }
+#fork { position: absolute; top: 0; right: 0; width: 115px; }
+#footer { background: #EEE; padding: 10px 40px; }
 #body { background: #FFF; padding: 10px 40px 20px; }
-h1 { font-size: 144%; font-weight: normal; margin: 10px 0 10px; padding: 0; }
+h1 { font-size: 120%; font-weight: normal; margin: 0; padding: 5px 0; background: #528; text-align: center; color: #EEE; font-style: italic; }
 p { margin: 10px 0; }
-a { color: #380; text-decoration: none; }
-a:hover { color: #491; text-decoration: underline; }
+a { color: #528; text-decoration: none; }
+a:hover { color: #529; text-decoration: underline; }
 a img { border: 0; }
 ul { list-style: none; }
-li { padding-left: 30px; background: url(img/lambdot.png) 0 5px no-repeat; }
+li { padding: 5px 0 5px 15px; background: url(img/dot.png) 0 13px no-repeat; }
 li em { font-style: italic; }
 .code { font: bold 90% 'Anonymous Pro', monospace; color: #555; }
