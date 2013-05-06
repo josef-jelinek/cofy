@@ -5,14 +5,14 @@
 }
 html, body, ul, li { margin: 0; padding: 0; border: 0; }
 html { background: #EEE; }
-body { font: normal 15px/1.4 Arial, sans-serif; color: #000; }
+body { font: normal 16px/1.4 'Segoe UI Semilight', Arial, sans-serif; color: #000; }
 #header { background: #CCC url(img/hexa.png); padding: 25px 0 15px; text-align: center; }
-#logo a { line-height: 29px; font-size: 18px; font-weight: bold; color: #000; font-variant: small-caps; font-style: italic; }
+#logo a { line-height: 25px; font-size: 18px; font-weight: bold; color: #000; font-style: italic; }
 #logo img { vertical-align: top; }
 #fork { position: absolute; top: 0; right: 0; width: 115px; }
 #footer { background: #EEE; padding: 10px 40px; }
 #body { background: #FFF; padding: 10px 40px 20px; }
-h1 { font-size: 120%; font-weight: normal; margin: 0; padding: 5px 0; background: #528; text-align: center; color: #EEE; font-style: italic; }
+h1 { font: normal 20px/36px Impact, Arial, sans-serif; margin: 0; padding: 0; background: #528; text-align: center; color: #EEE; }
 p { margin: 10px 0; }
 a { color: #528; text-decoration: none; }
 a:hover { color: #529; text-decoration: underline; }
