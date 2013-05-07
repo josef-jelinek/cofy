@@ -15,49 +15,73 @@ var TEST = (function (nil) {
 
     asserts = {
 
-        fail: function (message) {
+        fails: function (message) {
             check_cond(false, message || 'failed');
         },
 
-        throwsError: function (f, message) {
-            var succeeded = false;
-            try {
-                f();
-                succeeded = true;
-            } catch (e) {}
-            check_cond(!succeeded, message || 'no error thrown');
+        throws: {
+
+            error: function (f, message) {
+                var succeeded = false;
+                try {
+                    f();
+                    succeeded = true;
+                } catch (e) {}
+                check_cond(!succeeded, message || 'no error thrown');
+            }
         },
 
-        isTrue: function (cond, message) {
-            check_cond(cond === true, message || 'not true');
-        },
+        is: {
+            true: function (cond, message) {
+                check_cond(cond === true, message || 'not true');
+            },
 
-        isFalse: function (cond, message) {
-            check_cond(cond === false, message || 'not false');
-        },
+            false: function (cond, message) {
+                check_cond(cond === false, message || 'not false');
+            },
 
-        isTruthy: function (cond, message) {
-            check_cond(cond, message || 'not truthy');
-        },
+            truthy: function (cond, message) {
+                check_cond(cond, message || 'not truthy');
+            },
 
-        isFalsy: function (cond, message) {
-            check_cond(!cond, message || 'not falsy');
-        },
+            falsy: function (cond, message) {
+                check_cond(!cond, message || 'not falsy');
+            },
 
-        isNull: function (o, message) {
-            check_cond(o === null, message || 'not null');
-        },
+            null: function (o, message) {
+                check_cond(o === null, message || 'not null');
+            },
 
-        isUndefined: function (o, message) {
-            check_cond(o === nil, message || 'not undefined');
-        },
+            undefined: function (o, message) {
+                check_cond(o === nil, message || 'not undefined');
+            },
 
-        isSame: function (o1, o2, message) {
-            check_cond(o1 === o2, message || comparison_info(o1, o2));
-        },
+            same: function (o1, o2, message) {
+                check_cond(o1 === o2, message || comparison_info(o1, o2));
+            },
 
-        isNotSame: function (o1, o2, message) {
-            check_cond(o1 !== o2, message || 'the same');
+            not: {
+
+                true: function (cond, message) {
+                    check_cond(cond !== true, message || 'true');
+                },
+
+                false: function (cond, message) {
+                    check_cond(cond !== false, message || 'false');
+                },
+
+                null: function (o, message) {
+                    check_cond(o !== null, message || 'null');
+                },
+
+                undefined: function (o, message) {
+                    check_cond(o !== nil, message || 'undefined');
+                },
+
+                same: function (o1, o2, message) {
+                    check_cond(o1 !== o2, message || 'the same');
+                }
+            }
         }
     };
 
