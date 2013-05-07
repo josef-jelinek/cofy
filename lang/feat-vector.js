@@ -1,22 +1,24 @@
 // Persistent vector based on a shallow native-array tree
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
-/*jslint bitwise:true */
-var FEAT;
 
-(function () {
+/*globals MODULE */
+/*jslint es5: true, bitwise:true */
+
+MODULE.define('feat/vector', [], function () {
     'use strict';
+
     var Vec, tree_depth, get, set, push, pop, to_array, print,
         node_log_size = 4, node_size = (1 << node_log_size);
 
     Vec = function (node, count) {
         var depth = tree_depth(count);
         this.count = function () { return count; };
-        this.get = function (i) { return get(node, i, count, depth); };
+        this.get = function (i) { return get(node, i, depth); };
 
         this.set = function (i, val) {
             return i === count ? new Vec(push(node, val, count, depth), count + 1)
-                               : new Vec(set(node, i, val, count, depth), count);
+                               : new Vec(set(node, i, val, depth), count);
         };
 
         this.push = function (val) { return new Vec(push(node, val, count, depth), count + 1); };
@@ -33,7 +35,7 @@ var FEAT;
         return depth;
     };
 
-    get = function (node, i, count, depth) {
+    get = function (node, i, depth) {
         while (depth > 0) {
             depth -= 1;
             node = node[i >> node_log_size * depth & node_size - 1];
@@ -41,7 +43,7 @@ var FEAT;
         return node;
     };
 
-    set = function (node, i, val, count, depth) {
+    set = function (node, i, val, depth) {
         var pos, n;
         n = node = node.slice(0);
         while (depth > 1) {
@@ -114,16 +116,13 @@ var FEAT;
         return to_array(node, depth, []).join(', ');
     };
 
-    if (!FEAT) {
-        FEAT = {};
-    }
-    if (!FEAT.vector) {
-        FEAT.vector = function (arr) {
+    return {
+        create: function (arr) {
             var i, len = arr ? arr.length : 0, vec = new Vec([], 0);
             for (i = 0; i < len; i += 1) {
                 vec = vec.push(arr[i]);
             }
             return vec;
-        };
-    }
-}());
+        }
+    };
+});

@@ -2,6 +2,9 @@
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
 
+/*globals MODULE, Boolean */
+/*jslint es5: true */
+
 var MODULE = (function () {
     'use strict';
     var defs, reqs, mods, reset, resolve, try_use;
@@ -29,9 +32,9 @@ var MODULE = (function () {
     };
 
     try_use = function () {
-        var i, new_reqs = [];
+        var i, res, new_reqs = [];
         for (i = 0; i < reqs.length; i += 1) {
-            var res = resolve(reqs[i][1]);
+            res = resolve(reqs[i][1]);
             if (res) {
                 reqs[i][0].apply(null, res);
             } else {
@@ -46,7 +49,7 @@ var MODULE = (function () {
         reset: reset,
 
         use: function (mod_names, fn) {
-            reqs.push([fn, mod_names])
+            reqs.push([fn, mod_names]);
             try_use();
         },
 

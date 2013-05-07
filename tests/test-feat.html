@@ -12,7 +12,6 @@ h1 { margin: 0; padding: 0 0 20px; font: bold 24px/1 Arial, sans-serif; text-ali
 #result { padding: 3px 10px; }
 #log { padding: 10px; font-family: monospace; }
 </style>
-<script src="test-feat.js"></script>
 </head>
 
 <body onload="RUNNER.test()">
@@ -28,12 +27,16 @@ h1 { margin: 0; padding: 0 0 20px; font: bold 24px/1 Arial, sans-serif; text-ali
 <div id="time3"></div>
 <div><button onclick="RUNNER.measure();">Measure performance</button> (may block browser for some time)</div>
 <script src="../tools/test.js"></script>
+<script src="../lang/module.js"></script>
+<script src="test-feat.js"></script>
 <script src="../lang/feat-vector.js"></script>
 <script src="../lang/feat-sorted-map.js"></script>
 <script src="../lang/feat-cow-map.js"></script>
 <script>
-var RUNNER = (function () {
+var RUNNER;
+MODULE.use(['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector, sortedMap, cowMap) {
     'use strict';
+
     var time, time_vector, time_sorted_map, time_cow_map;
 
     time = function (f) {
@@ -43,7 +46,7 @@ var RUNNER = (function () {
     };
 
     time_vector = function () {
-        var i, t = 0, n = 10000, vec = FEAT.vector(), wr, rd, rm;
+        var i, t = 0, n = 10000, vec = vector.create(), wr, rd, rm;
 
         wr = Math.round(n * 1000 / time(function () {
             for (i = 0; i < n; i += 1)
@@ -66,7 +69,7 @@ var RUNNER = (function () {
     };
 
     time_sorted_map = function () {
-      var i, t = 0, n = 10000, map = FEAT.sortedMap(), wr, rd, rm;
+      var i, t = 0, n = 10000, map = sortedMap.create(), wr, rd, rm;
 
       wr = Math.round(n * 1000 / time(function () {
           for (i = 0; i < n; i += 1)
@@ -89,7 +92,7 @@ var RUNNER = (function () {
     };
 
     time_cow_map = function () {
-      var i, t = 0, n = 500, map = FEAT.cowMap(), wr, rd, rm;
+      var i, t = 0, n = 500, map = cowMap.create(), wr, rd, rm;
 
       wr = Math.round(n * 1000 / time(function () {
           for (i = 0; i < n; i += 1)
@@ -111,7 +114,7 @@ var RUNNER = (function () {
       return 'Copy-on-write map: ' + wr + ' writes/s, ' + rm + ' deletes/s (tested ONLY for ' + n + ' items)';
     };
 
-    return {
+    RUNNER = {
 
         test: function () {
             var result = document.getElementById('result'),
@@ -132,7 +135,7 @@ var RUNNER = (function () {
             }, 0);
         }
     };
-}());
+});
 </script>
 </body>
 </html>

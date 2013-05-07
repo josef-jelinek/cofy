@@ -1,10 +1,13 @@
 // Persistent sorted map based on a binary balanced trees (aka AA or BB trees)
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
-var FEAT;
 
-(function (nil) {
+/*globals MODULE, Object */
+/*jslint es5: true */
+
+MODULE.define('feat/sorted-map', [], function (nil) {
     'use strict';
+
     var Map, create_if_new, new_node, with_lev, with_lo_hi, with_lo, with_hi, go_lo,
         has, get, put, rm, skew, split, keys, values, to_object, to_pair_array, print;
 
@@ -78,9 +81,14 @@ var FEAT;
                 while (hi_lo.lo) { // find replacement
                     hi_lo = hi_lo.lo;
                 }
-                node = new_node(hi_lo.key, hi_lo.val, lev, lo, hi = rm(hi, hi_lo.key, lt));
+                hi = rm(hi, hi_lo.key, lt);
+                node = new_node(hi_lo.key, hi_lo.val, lev, lo, hi);
+            } else if (go_lo(node, key, lt)) {
+                lo = rm(lo, key, lt);
+                node = with_lo(node, lo);
             } else {
-                node = go_lo(node, key, lt) ? with_lo(node, lo = rm(lo, key, lt)) : with_hi(node, hi = rm(hi, key, lt));
+                hi = rm(hi, key, lt);
+                node = with_hi(node, hi);
             }
             if ((lo && lo.lev < lev - 1) || (hi && hi.lev < lev - 1)) {
                 node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev > lev ? with_lev(hi, lev - 1) : hi);
@@ -150,11 +158,8 @@ var FEAT;
         return to_pair_array(node, []).join(', ');
     };
 
-    if (!FEAT) {
-        FEAT = {};
-    }
-    if (!FEAT.sortedMap) {
-        FEAT.sortedMap = function (obj, lt) {
+    return {
+        create: function (obj, lt) {
             var key, map = new Map(nil, lt);
             for (key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -162,6 +167,6 @@ var FEAT;
                 }
             }
             return map;
-        };
-    }
-}());
+        }
+    };
+});

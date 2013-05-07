@@ -1,9 +1,11 @@
 // Naive copy-on-write persistent map on top of the native object
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
-var FEAT;
 
-(function () {
+/*globals MODULE, Object */
+/*jslint es5: true */
+
+MODULE.define('feat/cow-map', [], function () {
     'use strict';
 
     var Map, copy, assoc, dissoc, to_pair_array, print;
@@ -56,18 +58,12 @@ var FEAT;
         return a.length > 0 ? '{ ' + a.join(', ') + ' }' : '{}';
     };
 
-    if (!FEAT) {
-        FEAT = {};
-    }
-    if (!FEAT.cowMap) {
-        FEAT.cowMap = function (obj) {
+    return {
+        assoc: assoc,
+        dissoc: dissoc,
+
+        create: function (obj) {
             return new Map(copy(obj));
-        };
-    }
-    if (!FEAT.assoc) {
-        FEAT.assoc = assoc;
-    }
-    if (!FEAT.dissoc) {
-        FEAT.dissoc = dissoc;
-    }
-}());
+        }
+    };
+});
