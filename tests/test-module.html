@@ -17,9 +17,9 @@ var TESTS = (function () {
 
         use_fn_is_called_if_no_submodules: function () {
             var called = false;
-            MDEF.reset();
+            MODULE.reset();
 
-            MDEF.use([], function () {
+            MODULE.use([], function () {
                 called = true;
             });
 
@@ -28,9 +28,9 @@ var TESTS = (function () {
 
         mod_fn_is_not_called_if_no_submodules: function () {
             var called = false;
-            MDEF.reset();
+            MODULE.reset();
 
-            MDEF.mod('x', [], function () {
+            MODULE.define('x', [], function () {
                 called = true;
             });
 
@@ -39,84 +39,84 @@ var TESTS = (function () {
 
         mod_fn_is_called_if_used_after: function () {
             var called = '';
-            MDEF.reset();
+            MODULE.reset();
 
-            MDEF.mod('y', [], function () {
-                called += '(mod y [])';
+            MODULE.define('y', [], function () {
+                called += '(define y [])';
                 return 'Y';
             });
 
-            MDEF.mod('x', ['y'], function (y) {
-                called += '(mod x [y])' + y;
+            MODULE.define('x', ['y'], function (y) {
+                called += '(define x [y])' + y;
                 return 'X';
             });
 
-            MDEF.use(['x'], function (x) {
+            MODULE.use(['x'], function (x) {
                 called += '(use [x])' + x;
             });
 
-            this.is.same(called, '(mod y [])(mod x [y])Y(use [x])X');
+            this.is.same(called, '(define y [])(define x [y])Y(use [x])X');
         },
 
         mod_fns_are_called_if_used_before: function () {
             var called = '';
-            MDEF.reset();
+            MODULE.reset();
 
-            MDEF.use(['x'], function (x) {
+            MODULE.use(['x'], function (x) {
                 called += '(use [x])' + x;
             });
 
-            MDEF.mod('x', ['y'], function (y) {
-                called += '(mod x [y])' + y;
+            MODULE.define('x', ['y'], function (y) {
+                called += '(define x [y])' + y;
                 return 'X';
             });
 
-            MDEF.mod('y', [], function () {
-                called += '(mod y [])';
+            MODULE.define('y', [], function () {
+                called += '(define y [])';
                 return 'Y';
             });
 
-            this.is.same(called, '(mod y [])(mod x [y])Y(use [x])X');
+            this.is.same(called, '(define y [])(define x [y])Y(use [x])X');
         },
 
         tree_submodules_are_defined_bottom_up: function () {
             var called = '';
-            MDEF.reset();
+            MODULE.reset();
 
-            MDEF.use(['a'], function (a) {
+            MODULE.use(['a'], function (a) {
                 called += ' ' + a;
             });
 
-            MDEF.mod('a', ['b', 'c'], function (b, c) {
+            MODULE.define('a', ['b', 'c'], function (b, c) {
                 called += 'A';
                 return 'a[' + b + c + ']';
             });
 
-            MDEF.mod('b', ['d', 'e'], function (d, e) {
+            MODULE.define('b', ['d', 'e'], function (d, e) {
                 called += 'B';
                 return 'b[' + d + e + ']';
             });
 
-            MDEF.mod('c', ['e'], function (e) {
+            MODULE.define('c', ['e'], function (e) {
                 called += 'C';
                 return 'c[' + e + ']';
             });
 
-            MDEF.mod('d', ['c'], function (c) {
+            MODULE.define('d', ['c'], function (c) {
                 called += 'D';
                 return 'd[' + c + ']';
             });
 
             this.is.same(called, '');
 
-            MDEF.mod('e', [], function () {
+            MODULE.define('e', [], function () {
                 called += 'E';
                 return 'e';
             });
 
             this.is.same(called, 'ECDBA a[b[d[c[e]]e]c[e]]');
 
-            MDEF.use(['b', 'd'], function (b, d) {
+            MODULE.use(['b', 'd'], function (b, d) {
                 called += ' ' + b + d;
             });
 
@@ -135,7 +135,7 @@ var RUN = function () {
 <div id="result"></div>
 <div id="log"></div>
 <script src="../tools/test.js"></script>
-<script src="../tools/mdef.js"></script>
+<script src="../lang/module.js"></script>
 </body>
 </html>
 

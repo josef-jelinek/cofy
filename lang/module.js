@@ -1,5 +1,8 @@
+// Trivial module system inspired by AMD
+// Josef Jelinek josef.jelinek@gmail.com
+// Public domain
 
-var MDEF = (function (nil) {
+var MODULE = (function () {
     'use strict';
     var defs, reqs, mods, reset, resolve, try_use;
 
@@ -47,7 +50,7 @@ var MDEF = (function (nil) {
             try_use();
         },
 
-        mod: function (name, mod_names, fn) {
+        define: function (name, mod_names, fn) {
             defs[name] = defs[name] || [fn, mod_names];
             try_use();
         }
