@@ -2,12 +2,12 @@
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
 
-/*globals MODULE, Boolean */
+/*globals window, Boolean */
 /*jslint es5: true */
 
-var MODULE = (function () {
+(function (window, nil) {
     'use strict';
-    var defs, reqs, mods, reset, resolve, try_use;
+    var defs, reqs, mods, reset, resolve, try_resolve;
 
     reset = function () {
         defs = {};
@@ -31,7 +31,7 @@ var MODULE = (function () {
         return sub_mods.every(Boolean) ? sub_mods : null;
     };
 
-    try_use = function () {
+    try_resolve = function () {
         var i, res, new_reqs = [];
         for (i = 0; i < reqs.length; i += 1) {
             res = resolve(reqs[i][1]);
@@ -45,17 +45,19 @@ var MODULE = (function () {
     };
 
     reset();
-    return {
-        reset: reset,
+    if (window.define === nil) {
 
-        use: function (mod_names, fn) {
-            reqs.push([fn, mod_names]);
-            try_use();
-        },
-
-        define: function (name, mod_names, fn) {
+        window.define = function (name, mod_names, fn) {
             defs[name] = defs[name] || [fn, mod_names];
-            try_use();
-        }
-    };
-}());
+            try_resolve();
+        };
+
+        window.define.resolve = function (mod_names, fn) {
+            reqs.push([fn, mod_names]);
+            try_resolve();
+        };
+
+        window.define.reset = reset;
+        window.define.amd = {jQuery: true};
+    }
+}(window));

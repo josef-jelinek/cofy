@@ -2,10 +2,10 @@
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
 
-/*globals MODULE */
-/*jslint es5: true, bitwise:true */
+/*globals define */
+/*jslint es5: true, bitwise: true */
 
-MODULE.define('feat/vector', [], function () {
+define('feat/vector', [], function () {
     'use strict';
 
     var Vec, tree_depth, get, set, push, pop, to_array, print,

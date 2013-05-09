@@ -17,9 +17,9 @@ var TESTS = (function () {
 
         use_fn_is_called_if_no_submodules: function () {
             var called = false;
-            MODULE.reset();
+            define.reset();
 
-            MODULE.use([], function () {
+            define.resolve([], function () {
                 called = true;
             });
 
@@ -28,9 +28,9 @@ var TESTS = (function () {
 
         mod_fn_is_not_called_if_no_submodules: function () {
             var called = false;
-            MODULE.reset();
+            define.reset();
 
-            MODULE.define('x', [], function () {
+            define('x', [], function () {
                 called = true;
             });
 
@@ -39,19 +39,19 @@ var TESTS = (function () {
 
         mod_fn_is_called_if_used_after: function () {
             var called = '';
-            MODULE.reset();
+            define.reset();
 
-            MODULE.define('y', [], function () {
+            define('y', [], function () {
                 called += '(define y [])';
                 return 'Y';
             });
 
-            MODULE.define('x', ['y'], function (y) {
+            define('x', ['y'], function (y) {
                 called += '(define x [y])' + y;
                 return 'X';
             });
 
-            MODULE.use(['x'], function (x) {
+            define.resolve(['x'], function (x) {
                 called += '(use [x])' + x;
             });
 
@@ -60,18 +60,18 @@ var TESTS = (function () {
 
         mod_fns_are_called_if_used_before: function () {
             var called = '';
-            MODULE.reset();
+            define.reset();
 
-            MODULE.use(['x'], function (x) {
+            define.resolve(['x'], function (x) {
                 called += '(use [x])' + x;
             });
 
-            MODULE.define('x', ['y'], function (y) {
+            define('x', ['y'], function (y) {
                 called += '(define x [y])' + y;
                 return 'X';
             });
 
-            MODULE.define('y', [], function () {
+            define('y', [], function () {
                 called += '(define y [])';
                 return 'Y';
             });
@@ -81,42 +81,42 @@ var TESTS = (function () {
 
         tree_submodules_are_defined_bottom_up: function () {
             var called = '';
-            MODULE.reset();
+            define.reset();
 
-            MODULE.use(['a'], function (a) {
+            define.resolve(['a'], function (a) {
                 called += ' ' + a;
             });
 
-            MODULE.define('a', ['b', 'c'], function (b, c) {
+            define('a', ['b', 'c'], function (b, c) {
                 called += 'A';
                 return 'a[' + b + c + ']';
             });
 
-            MODULE.define('b', ['d', 'e'], function (d, e) {
+            define('b', ['d', 'e'], function (d, e) {
                 called += 'B';
                 return 'b[' + d + e + ']';
             });
 
-            MODULE.define('c', ['e'], function (e) {
+            define('c', ['e'], function (e) {
                 called += 'C';
                 return 'c[' + e + ']';
             });
 
-            MODULE.define('d', ['c'], function (c) {
+            define('d', ['c'], function (c) {
                 called += 'D';
                 return 'd[' + c + ']';
             });
 
             this.is.same(called, '');
 
-            MODULE.define('e', [], function () {
+            define('e', [], function () {
                 called += 'E';
                 return 'e';
             });
 
             this.is.same(called, 'ECDBA a[b[d[c[e]]e]c[e]]');
 
-            MODULE.use(['b', 'd'], function (b, d) {
+            define.resolve(['b', 'd'], function (b, d) {
                 called += ' ' + b + d;
             });
 

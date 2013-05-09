@@ -1,5 +1,7 @@
-/*global COFY,document */
-var TESTS = (function () {
+/*globals define, document */
+/*jslint es5: true */
+
+define('test-cofy', ['cofy/core'], function (COFY) {
     'use strict';
     return {
         read: {
@@ -474,4 +476,4 @@ var TESTS = (function () {
             }
         }
     };
-}());
+});

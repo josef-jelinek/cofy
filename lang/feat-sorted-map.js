@@ -2,10 +2,10 @@
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
 
-/*globals MODULE, Object */
+/*globals define, Object */
 /*jslint es5: true */
 
-MODULE.define('feat/sorted-map', [], function (nil) {
+define('feat/sorted-map', [], function (nil) {
     'use strict';
 
     var Map, create_if_new, new_node, with_lev, with_lo_hi, with_lo, with_hi, go_lo,

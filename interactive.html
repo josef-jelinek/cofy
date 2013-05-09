@@ -94,6 +94,7 @@ canvas { display: block; margin: 10px auto; width: 200px; height: 200px; backgro
   <canvas id="canvas3" width="200" height="200"></canvas>
 </div>
 
+<script src="lang/module.js"></script>
 <script src="lang/core.js"></script>
 <script>
 function html_encode(s) {
@@ -119,6 +120,12 @@ var OUT = (function() {
     }
   };
 }());
+
+var COFY;
+
+define.resolve(['cofy/core'], function (cofy) {
+    COFY = cofy;
+});
 
 function read_eval_print(id_in, id_out, env) {
   var s = document.getElementById(id_in).value;

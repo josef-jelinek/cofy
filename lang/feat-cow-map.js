@@ -2,10 +2,10 @@
 // Josef Jelinek josef.jelinek@gmail.com
 // Public domain
 
-/*globals MODULE, Object */
+/*globals define, Object */
 /*jslint es5: true */
 
-MODULE.define('feat/cow-map', [], function () {
+define('feat/cow-map', [], function () {
     'use strict';
 
     var Map, copy, assoc, dissoc, to_pair_array, print;

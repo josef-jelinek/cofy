@@ -1,12 +1,12 @@
-/*global window */
-/*jslint regexp: true, evil: true */
+/*globals define, window */
+/*jslint es5: true, regexp: true, evil: true */
 
 /**
  *
  * @author Josef Jelinek josef.jelinek@gmail.com
  * @license Public Domain - Use at your own risk
  */
-var COFY = (function (nil) {
+define('cofy/core', [], function (nil) {
     'use strict';
     var is, errors, head, tail, value, symbols = {},
         Symbol, Cons, Lazy, Var, Syntax,
@@ -856,4 +856,4 @@ var COFY = (function (nil) {
             };
         }
     };
-}());
+});

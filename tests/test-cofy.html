@@ -9,7 +9,6 @@ body { font: 12px Arial, sans-serif; background: #FFF; color: #000; padding: 20p
 #result { padding: 3px 10px; }
 #log { padding: 10px; font-family: monospace; }
 </style>
-<script src="test-cofy.js"></script>
 </head>
 
 <body onload="run()">
@@ -17,12 +16,15 @@ body { font: 12px Arial, sans-serif; background: #FFF; color: #000; padding: 20p
 <div id="log"></div>
 <div id="test-text" style="display: none">Test text</div>
 <script src="../tools/test.js"></script>
+<script src="../lang/module.js"></script>
 <script src="../lang/core.js"></script>
+<script src="test-cofy.js"></script>
 <script>
 function run() {
     var result = document.getElementById('result');
     var log = document.getElementById('log');
-    TEST.init(result, log)(TESTS);
+
+    define.resolve(['test-cofy'], TEST.init(result, log));
 }
 </script>
 <script type="application/x-cofy">

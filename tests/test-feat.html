@@ -34,7 +34,7 @@ h1 { margin: 0; padding: 0 0 20px; font: bold 24px/1 Arial, sans-serif; text-ali
 <script src="../lang/feat-cow-map.js"></script>
 <script>
 var RUNNER;
-MODULE.use(['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector, sortedMap, cowMap) {
+define.resolve(['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector, sortedMap, cowMap) {
     'use strict';
 
     var time, time_vector, time_sorted_map, time_cow_map;
@@ -69,49 +69,49 @@ MODULE.use(['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector,
     };
 
     time_sorted_map = function () {
-      var i, t = 0, n = 10000, map = sortedMap.create(), wr, rd, rm;
+        var i, t = 0, n = 10000, map = sortedMap.create(), wr, rd, rm;
 
-      wr = Math.round(n * 1000 / time(function () {
-          for (i = 0; i < n; i += 1)
-              map = map.assoc('a' + i * 113 % n, i);
-          for (i = 0; i < n; i += 1)
-              map = map.assoc('a' + i * 113 % n, i + 1);
-      }));
+        wr = Math.round(n * 1000 / time(function () {
+            for (i = 0; i < n; i += 1)
+                map = map.assoc('a' + i * 113 % n, i);
+            for (i = 0; i < n; i += 1)
+                map = map.assoc('a' + i * 113 % n, i + 1);
+        }));
 
-      rd = Math.round(n * 1000 / time(function () {
-          for (i = 0; i < n; i += 1)
-              t += map.get('a' + i);
-      }));
+        rd = Math.round(n * 1000 / time(function () {
+            for (i = 0; i < n; i += 1)
+                t += map.get('a' + i);
+        }));
 
-      rm = Math.round(n * 1000 / time(function () {
-          for (i = 0; i < n; i += 1)
-              map = map.dissoc('a' + i);
-      }));
+        rm = Math.round(n * 1000 / time(function () {
+            for (i = 0; i < n; i += 1)
+                map = map.dissoc('a' + i);
+        }));
 
-      return 'Persistent sorted map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
+        return 'Persistent sorted map: ' + rd + ' reads/s, ' + wr + ' writes/s, ' + rm + ' deletes/s (tested for ' + n + ' items)';
     };
 
     time_cow_map = function () {
-      var i, t = 0, n = 500, map = cowMap.create(), wr, rd, rm;
+        var i, t = 0, n = 500, map = cowMap.create(), wr, rd, rm;
 
-      wr = Math.round(n * 1000 / time(function () {
-          for (i = 0; i < n; i += 1)
-              map = map.assoc('a' + i * 113 % n, i);
-          for (i = 0; i < n; i += 1)
-              map = map.assoc('a' + i * 113 % n, i + 1);
-      }));
+        wr = Math.round(n * 1000 / time(function () {
+            for (i = 0; i < n; i += 1)
+                map = map.assoc('a' + i * 113 % n, i);
+            for (i = 0; i < n; i += 1)
+                map = map.assoc('a' + i * 113 % n, i + 1);
+        }));
 
-      rd = Math.round(n * 1000 / time(function () {
-          for (i = 0; i < n; i += 1)
-              t += map.get('a' + i);
-      }));
+        rd = Math.round(n * 1000 / time(function () {
+            for (i = 0; i < n; i += 1)
+                t += map.get('a' + i);
+        }));
 
-      rm = Math.round(n * 1000 / time(function () {
-          for (i = 0; i < n; i += 1)
-              map = map.dissoc('a' + i);
-      }));
+        rm = Math.round(n * 1000 / time(function () {
+            for (i = 0; i < n; i += 1)
+                map = map.dissoc('a' + i);
+        }));
 
-      return 'Copy-on-write map: ' + wr + ' writes/s, ' + rm + ' deletes/s (tested ONLY for ' + n + ' items)';
+        return 'Copy-on-write map: ' + wr + ' writes/s, ' + rm + ' deletes/s (tested ONLY for ' + n + ' items)';
     };
 
     RUNNER = {
@@ -119,7 +119,7 @@ MODULE.use(['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector,
         test: function () {
             var result = document.getElementById('result'),
                 log = document.getElementById('log');
-            TEST.init(result, log)(TESTS);
+            define.resolve(['test-feat'], TEST.init(result, log));
         },
 
         measure: function () {

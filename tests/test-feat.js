@@ -1,12 +1,10 @@
-/*globals MODULE, TESTS, Object, Math */
+/*globals define, Object, Math */
 /*jslint es5: true */
 
-var TESTS;
-
-MODULE.use(['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector, sortedMap, cowMap) {
+define('test-feat', ['feat/vector', 'feat/sorted-map', 'feat/cow-map'], function (vector, sortedMap, cowMap) {
     'use strict';
 
-    TESTS = {
+    return {
         sorted_map: {
 
             create_empty: function () {

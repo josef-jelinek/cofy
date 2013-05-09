@@ -11,7 +11,8 @@
 </div>
 <h1>Integration with JavaScript</h1>
 <div id="body">
-  <p>The first step is to include the 'core.js' script.</p>
+  <p>The first step is to include 'module.js' and 'core.js' script. The 'module.js' file is just a simple AMD module resolver, so you can use another one.</p>
+  <p class="code">&lt;script src="lang/module.js"&gt;&lt;/script&gt;</p>
   <p class="code">&lt;script src="lang/core.js"&gt;&lt;/script&gt;</p>
   <p><b>There are three stages of the code:</b></p>
 
@@ -22,6 +23,10 @@
   </ul>
 
   <p>There are two common ways to execute the code in a JavaScript string. Both ways use read_eval function that parses the string to a Lisp data structure, compiles the data structure to a function and calls the function that returns the result of the last statement in the source code.</p>
+  <p>To have an access to the compiler object, you should use 'require' (AMD) or 'define.resolve' (bundled custom module system) functions
+  <ul>
+    <li><span class="code">define.resolve(['cofy/core'], function (COFY) { /* your code using COFY */})</span></li>
+  </ul>
   <ul>
     <li><span class="code">COFY.read_eval(<em>code-string</em>)</span></li>
   </ul>
